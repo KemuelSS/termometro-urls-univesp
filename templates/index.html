@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termômetro de Confiança de URLs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Termômetro de URLs 🛡️</h1>
+        <p class="subtitle">Análise avançada de segurança para links suspeitos.</p>
+
+        <form id="urlForm" method="POST">
+            <input type="url" name="url" placeholder="https://exemplo.com.br" required>
+            <br>
+            <button type="submit" id="btnAnalisar">
+                <span id="btnText">Analisar URL</span>
+                <div id="loader" class="loader" style="display: none;"></div>
+            </button>
+        </form>
+
+        {% if resultado %}
+            <div class="result-box {{ resultado.cor }}">
+                <h3>Resultado da Análise</h3>
+                <p>{{ resultado.status }}</p>
+                <small>Score de Confiança: <strong>{{ resultado.score }}/100</strong></small><br>
+                <small>IP do Servidor: <strong>{{ ip_site }}</strong></small> 
+            </div>
+        {% endif %}
+
+        {% if historico %}
+            <div class="historico-box">
+                <h3>Últimas Consultas</h3>
+                <ul>
+                    {% for item in historico %}
+                        <li>
+                            <span class="url-hist">{{ item.url }}</span>
+                            <span class="score-badge {% if item.trust_score >= 70 %}bg-green{% elif item.trust_score >= 40 %}bg-orange{% else %}bg-red{% endif %}">
+                                Score: {{ item.trust_score }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Script simples para mostrar o carregamento ao clicar
+        document.getElementById('urlForm').onsubmit = function() {
+            document.getElementById('btnText').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('btnAnalisar').disabled = true;
+        };
+    </script>
+</body>
+</html>
