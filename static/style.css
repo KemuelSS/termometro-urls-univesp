@@ -1,5 +1,4 @@
-/* Importando uma fonte mais moderna */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * {
     box-sizing: border-box;
@@ -7,63 +6,77 @@
     padding: 0;
 }
 
+/* ==============================================
+   DARK MODE - BASE & CONTAINER
+   ============================================== */
+
 body {
-    font-family: 'Inter', sans-serif;
-    /* Gradiente suave de fundo */
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    color: #2d3436;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    font-family: 'Poppins', sans-serif;
     min-height: 100vh;
     padding: 20px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #0f172a; 
 }
 
 .container {
-    background-color: #ffffff;
+    background: rgba(30, 41, 59, 0.7) !important; 
+    backdrop-filter: blur(16px); 
+    -webkit-backdrop-filter: blur(16px); 
+    border: 1px solid rgba(255, 255, 255, 0.08); 
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+    border-radius: 20px; 
     padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
     text-align: center;
     max-width: 550px;
     width: 100%;
 }
 
+/* ==============================================
+   TIPOGRAFIA E TEXTOS
+   ============================================== */
+
 h1 {
-    color: #1e272e;
+    color: #f8fafc; 
     font-weight: 700;
     font-size: 1.8rem;
     margin-bottom: 8px;
 }
 
 .subtitle {
-    color: #7f8c8d;
+    color: #94a3b8; 
     font-size: 0.95rem;
     margin-bottom: 30px;
 }
 
-/* Estilo do Campo de Input */
+/* ==============================================
+   FORMULÁRIOS E BOTÕES
+   ============================================== */
+
 input[type="url"] {
     width: 100%;
     padding: 16px;
     margin-bottom: 12px;
-    border: 2px solid #edf2f7;
+    border: 2px solid #334155; 
     border-radius: 12px;
     font-size: 16px;
-    background-color: #f8fafc;
+    background-color: #1e293b; 
+    color: #f1f5f9; 
     transition: all 0.3s ease;
 }
 
 input[type="url"]:focus {
-    border-color: #3498db;
-    background-color: #fff;
-    box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+    border-color: #3b82f6;
+    background-color: #0f172a; 
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); 
     outline: none;
 }
 
-/* Botão Moderno com Efeito de Hover */
 button {
-    background-color: #3498db;
+    background-color: #3b82f6;
     color: white;
     border: none;
     padding: 16px;
@@ -71,135 +84,30 @@ button {
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s, background-color 0.2s;
+    transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
     width: 100%;
 }
 
 button:hover {
-    background-color: #2980b9;
-    transform: translateY(-1px);
+    background-color: #2563eb; 
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); 
 }
 
 button:active {
     transform: translateY(0);
 }
 
-/* Caixa de Resultado Moderna e Legível */
-.result-box {
-    margin-top: 30px;
-    padding: 24px;
-    border-radius: 16px;
-    text-align: left;
-    border: 1px solid transparent; /* Borda fina para dar contorno */
-    transition: all 0.3s ease;
+button:disabled {
+    background-color: #475569;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
-/* Títulos e textos dentro da caixa de resultado */
-.result-box h3 {
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    color: #444; /* Texto escuro sempre legível */
-}
 
-.result-box p {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0;
-    color: #222; /* Texto escuro sempre legível */
-}
-
-/* Cores por Nível (Pastel no fundo, Escuro no texto) */
-.res-green { 
-    background-color: #ecfdf5; 
-    border-color: #10b981; 
-}
-.res-green p { color: #065f46; }
-
-.res-orange { 
-    background-color: #fffbeb; 
-    border-color: #f59e0b; 
-}
-.res-orange p { color: #92400e; }
-
-.res-red { 
-    background-color: #fef2f2; 
-    border-color: #ef4444; 
-}
-.res-red p { color: #991b1b; }
-
-/* Histórico em formato de Card */
-.historico-box {
-    margin-top: 40px;
-    border-top: 2px solid #f1f2f6;
-    padding-top: 25px;
-}
-
-.historico-box h3 {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #a4b0be;
-    margin-bottom: 15px;
-}
-
-.historico-box li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    background-color: #f8fafc;
-    margin-bottom: 8px;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    transition: background-color 0.2s;
-}
-
-.historico-box li:hover {
-    background-color: #f1f2f6;
-}
-
-.url-hist {
-    color: #485e74;
-    font-weight: 500;
-    max-width: 60%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.score-badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-/* Cores do Histórico */
-.bg-green { background-color: #dff9fb; color: #0984e3; }
-.bg-orange { background-color: #fef5e7; color: #d35400; }
-.bg-red { background-color: #fadbd8; color: #c0392b; }
-
-/* --- Melhoria de Contraste nas Caixas de Resultado --- */
-.result-box {
-    margin-top: 30px;
-    padding: 24px;
-    border-radius: 16px;
-    text-align: left;
-    border: 1px solid transparent;
-}
-
-.res-green { background-color: #ecfdf5; border-color: #10b981; color: #065f46; }
-.res-orange { background-color: #fffbeb; border-color: #f59e0b; color: #92400e; }
-.res-red { background-color: #fef2f2; border-color: #ef4444; color: #991b1b; }
-
-.result-box h3 { font-size: 0.8rem; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8; }
-.result-box p { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; }
-
-/* --- Animação do Loader (Spinner) --- */
 .loader {
-    border: 3px solid #f3f3f3;
+    border: 3px solid rgba(255, 255, 255, 0.3);
     border-top: 3px solid #ffffff;
     border-radius: 50%;
     width: 20px;
@@ -213,19 +121,117 @@ button:active {
     100% { transform: rotate(360deg); }
 }
 
-button:disabled {
-    background-color: #a0aec0;
-    cursor: not-allowed;
+/* ==============================================
+   CAIXAS DE RESULTADO DA ANÁLISE
+   ============================================== */
+
+.result-box {
+    margin-top: 30px;
+    padding: 24px;
+    border-radius: 16px;
+    text-align: left;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
 }
+
+.result-box h3 { 
+    font-size: 0.8rem; 
+    text-transform: uppercase; 
+    margin-bottom: 5px; 
+    opacity: 0.8; 
+}
+.result-box p { 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+    margin-bottom: 5px; 
+}
+
+.res-green { 
+    background-color: rgba(16, 185, 129, 0.1); 
+    border-color: #10b981; 
+    color: #34d399;
+}
+.res-orange { 
+    background-color: rgba(245, 158, 11, 0.1); 
+    border-color: #f59e0b; 
+    color: #fbbf24; 
+}
+.res-red { 
+    background-color: rgba(239, 68, 68, 0.1); 
+    border-color: #ef4444; 
+    color: #f87171; 
+}
+
+/* ==============================================
+   HISTÓRICO DE CONSULTAS
+   ============================================== */
+
+.historico-box {
+    margin-top: 40px;
+    border-top: 2px solid rgba(255, 255, 255, 0.05);
+    padding-top: 25px;
+}
+
+.historico-box h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b; 
+    margin-bottom: 15px;
+}
+
+.historico-box li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: rgba(15, 23, 42, 0.5); 
+    margin-bottom: 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.85rem;
+    transition: background-color 0.2s;
+}
+
+.historico-box li:hover {
+    background-color: rgba(30, 41, 59, 0.9); 
+}
+
+.url-hist {
+    color: #cbd5e1; 
+    font-weight: 500;
+    max-width: 60%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.score-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.bg-green { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+.bg-orange { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.bg-red { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+
 
 /* ==============================================
    PROJETO V2: RESPONSIVIDADE PARA SMARTPHONES
    ============================================== */
 
 @media (max-width: 480px) {
-    /* ... (suas outras regras de body e h1) ... */
+    .container {
+        padding: 30px 20px; 
+    }
 
-    /* 1. Transforma a linha do histórico em uma coluna (URL em cima, Score embaixo) */
+    h1 {
+        font-size: 1.5rem;
+    }
+
     .historico-box li {
         display: flex !important;
         flex-direction: column !important;
@@ -233,7 +239,6 @@ button:disabled {
         gap: 8px;
     }
 
-    /* 2. Força a quebra da URL e remove a tesoura do CSS */
     .url-hist {
         white-space: normal !important; 
         word-break: break-all !important; 
@@ -245,16 +250,3 @@ button:disabled {
         width: 100% !important;
     }
 }
-
-    /* 3. Tornar as URLs legíveis sem quebrar a tela */
-    .historico-item a, 
-    .historico-item span, 
-    .ultimas-consultas a {
-        white-space: normal !important; 
-        word-break: break-all !important; 
-        overflow: visible !important;
-        text-overflow: clip !important;
-        font-size: 0.85rem;
-        line-height: 1.4;
-        display: block;
-    }

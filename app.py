@@ -1,24 +1,29 @@
 from dotenv import load_dotenv
 import os
 import requests
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory 
 import sqlite3
 from datetime import datetime
 import whois
 from urllib.parse import urlparse
 import socket
 
+load_dotenv()
+
 app = Flask(__name__)
-# Chave da API Safe Browsing do Google
-GOOGLE_API_KEY = "AIzaSyAQimygIcpsrLQzChekBmopzNJDersNVs4" 
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'escudo.png', mimetype='image/png')
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # --- Funções do Banco de Dados ---
 def get_db_connection():
     conn = sqlite3.connect('banco_dados.db')
     conn.row_factory = sqlite3.Row
     
-    # 🚨 A MÁGICA ACONTECE AQUI: 
-    # Força a criação da tabela caso o servidor da nuvem tenha apagado
     conn.execute('''
         CREATE TABLE IF NOT EXISTS consultas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
