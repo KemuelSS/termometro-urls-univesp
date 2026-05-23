@@ -30,6 +30,7 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+    init_db()
 
 # --- Lógica de Segurança (Heurísticas) ---
 def extrair_dominio(url):
@@ -137,5 +138,4 @@ def index():
     return render_template('index.html', resultado=resultado, url_analisada=url_analisada, historico=historico_db, ip_site=ip_site)
 
 if __name__ == '__main__':
-    init_db() 
     app.run(debug=True)
