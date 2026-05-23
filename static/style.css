@@ -217,3 +217,44 @@ button:disabled {
     background-color: #a0aec0;
     cursor: not-allowed;
 }
+
+/* ==============================================
+   PROJETO V2: RESPONSIVIDADE PARA SMARTPHONES
+   ============================================== */
+
+@media (max-width: 480px) {
+    /* ... (suas outras regras de body e h1) ... */
+
+    /* 1. Transforma a linha do histórico em uma coluna (URL em cima, Score embaixo) */
+    .historico-box li {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px;
+    }
+
+    /* 2. Força a quebra da URL e remove a tesoura do CSS */
+    .url-hist {
+        white-space: normal !important; 
+        word-break: break-all !important; 
+        overflow: visible !important;
+        text-overflow: clip !important;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        display: block !important;
+        width: 100% !important;
+    }
+}
+
+    /* 3. Tornar as URLs legíveis sem quebrar a tela */
+    .historico-item a, 
+    .historico-item span, 
+    .ultimas-consultas a {
+        white-space: normal !important; 
+        word-break: break-all !important; 
+        overflow: visible !important;
+        text-overflow: clip !important;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        display: block;
+    }
