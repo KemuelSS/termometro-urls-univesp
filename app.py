@@ -16,10 +16,9 @@ GOOGLE_API_KEY = "AIzaSyAQimygIcpsrLQzChekBmopzNJDersNVs4"
 def get_db_connection():
     conn = sqlite3.connect('banco_dados.db')
     conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    conn = get_db_connection()
+    
+    # 🚨 A MÁGICA ACONTECE AQUI: 
+    # Força a criação da tabela caso o servidor da nuvem tenha apagado
     conn.execute('''
         CREATE TABLE IF NOT EXISTS consultas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,8 +28,8 @@ def init_db():
         )
     ''')
     conn.commit()
-    conn.close()
-    init_db()
+    
+    return conn
 
 # --- Lógica de Segurança (Heurísticas) ---
 def extrair_dominio(url):
