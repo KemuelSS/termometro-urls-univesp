@@ -19,6 +19,92 @@ def favicon():
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
+# --- LISTA DE BLOQUEIO LOCAL (PROCON-SP) ---
+# Atualizada em Maio/2026
+PROCON_BLOCKLIST = {
+    "123importados.com",
+    "123multiofertas.com.br",
+    "123multiofertas.net",
+    "acessivelmodasbras.com.br",
+    "agachecomercial.net",
+    "allprinter.com.br",
+    "ascarishop.com",
+    "bmjbaby.com.br",
+    "boavistaacabamentos.com",
+    "boticamaviris.com.br",
+    "brasilmagazine.com",
+    "brezzy.com.br",
+    "caixamisteriosa.com",
+    "casadonatebrasil.com",
+    "casakith.com.br",
+    "casamagazinebrasil.com",
+    "centroofertas.com.br",
+    "cintosbyhi.com.br",
+    "cogumeloshop.com",
+    "comandantedasofertas.com",
+    "compufree.com.br",
+    "dbellestore.com",
+    "descontosbrasileiro.com",
+    "drogariamc.com.br",
+    "dutrametais.com",
+    "equipamentosrodrigues.com",
+    "everestgroup.com.br",
+    "fabricaauthenticite.com",
+    "fabricashoes.com.br",
+    "feme.com.br",
+    "ferrutini.com.br",
+    "flystorebrasil.com.br",
+    "fully.com.br",
+    "futcertobrasil.com",
+    "gelniche.com.br",
+    "gigavarejo.com.br",
+    "gomic.com.br",
+    "hofferta.com",
+    "hotelurbano.com.br",
+    "hurb.com",
+    "iluminim.com.br",
+    "iwoseries.com",
+    "laserfast.com",
+    "lbashop.com.br",
+    "leggingbrasil.com",
+    "leggingbrasil.com.br",
+    "lewadoimports.com",
+    "liquidashoes.com.br",
+    "lojaatlantis.com",
+    "lojabestvarejos.com",
+    "lojacondi.com",
+    "lojadigivarejista.com",
+    "lojadubaiimports.com.br",
+    "lojamiofarma.com",
+    "lojaslondrina.com.br",
+    "lojavitesse.com",
+    "lovelybox.com.br",
+    "magazineal.com",
+    "magazinedosatacados.com",
+    "magazinestore.com",
+    "magazinmulher.com.br",
+    "marabraz.com.br",
+    "mundialeletro.com.br",
+    "nuvemdedescontos.com",
+    "ofertastore.com",
+    "outletdasfraldas.com.br",
+    "peixeurbano.com.br",
+    "premierexclusive.com.br",
+    "rocklin.com.br",
+    "rosafashion.com.br",
+    "safiravillage.com.br",
+    "saldaocarioca.com.br",
+    "santolarmoveis.com.br",
+    "shopmaxx.com.br",
+    "sigaofertas.com.br",
+    "tecnotec.com.br",
+    "tiggoshop.com.br",
+    "usenox.com",
+    "vivadecor.com.br",
+    "vivonestore.com",
+    "zinnimodas.com"
+}
+
 # --- Funções do Banco de Dados ---
 def get_db_connection():
     conn = sqlite3.connect('banco_dados.db')
@@ -92,20 +178,36 @@ def index():
     if request.method == 'POST':
         url = request.form['url']
         url_analisada = url
-        
-        # 1. Busca o IP
+
+        # 1. Garante a extração limpa do domínio de forma blindada
         try:
             dominio_limpo = extrair_dominio(url)
+        except:
+            # Fallback caso a função falhe ou o usuário digite algo estranho
+            dominio_limpo = url.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
+
+        # 2. Busca o IP com base no domínio que já temos garantido
+        try:
             ip_site = socket.gethostbyname(dominio_limpo)
         except:
             ip_site = "IP Indisponível"
 
-        # 2. Executa as checagens (API Google + WHOIS)
-        e_golpe_confirmado = consultar_google_safe_browsing(url)
-        dias_de_vida = verificar_idade_dominio(url)
+        # 3. Executa as checagens (PROCON > API Google > WHOIS)
+        na_lista_procon = dominio_limpo.lower() in PROCON_BLOCKLIST
 
-        # 3. Motor de Regras (Prioridade: Se o Google diz que é golpe, o score é 0)
-        if e_golpe_confirmado:
+        if na_lista_procon:
+            e_golpe_confirmado = False
+            dias_de_vida = 0
+        else:
+            e_golpe_confirmado = consultar_google_safe_browsing(url)
+            dias_de_vida = verificar_idade_dominio(url)
+
+        # 4. Motor de Regras (Prioridade: Procon > Google > WHOIS)
+        if na_lista_procon:
+            trust_score = 0
+            status = "🚨 ALERTA PROCON-SP: Este site consta na lista oficial de sites a evitar (Fraude/Não entrega)."
+            cor = "res-red"
+        elif e_golpe_confirmado:
             trust_score = 0
             status = "PERIGO CRÍTICO: Este link está na lista negra de fraudes do Google!"
             cor = "res-red"
@@ -128,13 +230,13 @@ def index():
 
         resultado = {"score": trust_score, "status": status, "cor": cor}
 
-        # 4. Salva no banco de dados apenas UMA vez
+        # 5. Salva no banco de dados apenas UMA vez
         conn = get_db_connection()
         conn.execute('INSERT INTO consultas (url, trust_score) VALUES (?, ?)', (url, trust_score))
         conn.commit()
         conn.close()
 
-    # 5. Carrega o histórico (Sempre fora do IF POST)
+    # 6. Carrega o histórico (Sempre fora do IF POST para aparecer ao abrir a página)
     conn = get_db_connection()
     historico_db = conn.execute('SELECT url, trust_score FROM consultas ORDER BY id DESC LIMIT 5').fetchall()
     conn.close()
