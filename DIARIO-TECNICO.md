@@ -12,7 +12,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Quando**: antes da Quinzena 1 (10/08/2026).
 
-**Contexto**: o PI2 reuniu um grupo maior (~10 pessoas) a partir dos três autores do PI1 (Karoline Cumim, Kelvin Costa, Kemuel Sousa). O edital deste semestre pede: framework web, banco de dados, script web (JavaScript), nuvem, uso de API, acessibilidade, controle de versão e testes, com análise de dados como item opcional.
+**Contexto**: o PI2 reuniu um grupo maior (8 pessoas) a partir dos três autores do PI1 (Karoline Cumim, Kelvin Costa, Kemuel Sousa). O edital deste semestre pede: framework web, banco de dados, script web (JavaScript), nuvem, uso de API, acessibilidade, controle de versão e testes, com análise de dados como item opcional.
 
 **Decisão**: em vez de começar um projeto novo, o grupo optou por continuar e evoluir o Termômetro de URLs, o sistema entregue no PI1. Motivos: o sistema já está em produção e testável ao vivo; já existe pesquisa de campo com 54 participantes da comunidade (dado citado no relatório do PI1); e, cruzando com o edital deste semestre, 4 dos 8 requisitos obrigatórios já estavam resolvidos sem escrever uma linha de código nova (framework web, nuvem, uso de API, controle de versão).
 
@@ -29,7 +29,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 **Contexto**: o sistema original foi construído com pouco conhecimento técnico acumulado pela equipe na época. Antes de continuar em cima dele, avaliamos se as escolhas de linguagem, framework, banco de dados e hospedagem ainda faziam sentido, ou se valeria migrar para outra stack.
 
 **Decisão, camada por camada**:
-- **Linguagem e framework (Python + Flask)**: mantido. Curva de aprendizado mais suave para um grupo de ~10 pessoas com níveis técnicos mistos, e já resolve o requisito de framework web do edital. Reescrever em outra linguagem ou framework não destravaria nenhum requisito novo.
+- **Linguagem e framework (Python + Flask)**: mantido. Curva de aprendizado mais suave para um grupo de 8 pessoas com níveis técnicos mistos, e já resolve o requisito de framework web do edital. Reescrever em outra linguagem ou framework não destravaria nenhum requisito novo.
 - **Banco de dados (SQLite)**: será substituído por Postgres gerenciado + SQLAlchemy na Fase 2. O SQLite puro tinha um problema real: como o Render (plataforma de hospedagem) não mantém disco persistente no plano gratuito, o histórico de consultas era apagado a cada novo deploy.
 - **Hospedagem (Render)**: mantida. O problema nunca foi a plataforma, era a ausência de banco persistente — resolvido ativando o Postgres gerenciado do próprio Render, sem o custo de aprender infraestrutura nova (AWS/GCP) dentro do prazo do semestre.
 - **Frontend (HTML/CSS + JavaScript puro)**: mantido, sem introduzir um framework de frontend (React, Vue). JavaScript puro já é suficiente para cumprir o requisito de script web do edital.
@@ -38,9 +38,9 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Divisão de papéis no grupo
 
-**Quando**: a partir da Quinzena 1 (10/08/2026), em atualização contínua conforme o grupo maior (~10 pessoas) responde no WhatsApp.
+**Quando**: a partir da Quinzena 1 (10/08/2026), em atualização contínua conforme o grupo maior (8 pessoas) responde no WhatsApp.
 
-**Contexto**: além da trilha técnica (Kemuel + Claude), o grupo definiu outras frentes de trabalho: entrega dos documentos na plataforma (AVA), escrita/redação, coleta de feedback com a comunidade externa, análise de dados (pesquisa + dashboard), vídeo de apresentação. Cada pessoa foi convidada a indicar o que prefere fazer.
+**Contexto**: além da trilha técnica (Kemuel), o grupo definiu outras frentes de trabalho: entrega dos documentos na plataforma (AVA), escrita/redação, coleta de feedback com a comunidade externa, análise de dados (pesquisa + dashboard), vídeo de apresentação e outras funções/atividades necessárias. Cada pessoa foi convidada a indicar o que prefere fazer.
 
 **Quem já se posicionou**:
 
@@ -50,7 +50,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 | Tanada | Design e apresentação — interface, material visual, roteiro e produção do vídeo final (tem experiência com Design Gráfico) |
 | Ana Claudia | Textos — se ofereceu pra esboçar o Plano de Ação e enviar pro grupo avaliar |
 | Kathelyn | Análise de dados (avisou que também ajuda no que mais precisar) |
-| Karoline | Entrega dos relatórios e materiais na plataforma (AVA) — Kemuel vai confirmar com ela |
+| Karoline | Entrega dos relatórios e materiais na plataforma (AVA) |
 
 **Ainda sem frente definida**: Kelvin e Daniel.
 
