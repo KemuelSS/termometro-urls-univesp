@@ -51,8 +51,9 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 | Ana Claudia | Textos — se ofereceu pra esboçar o Plano de Ação e enviar pro grupo avaliar |
 | Kathelyn | Análise de dados (avisou que também ajuda no que mais precisar) |
 | Karoline | Entrega dos relatórios e materiais na plataforma (AVA) |
+| Kelvin | Apoio geral, no que for necessário |
 
-**Ainda sem frente definida**: Kelvin e Daniel.
+**Daniel** chegou a demonstrar interesse em ajudar na parte técnica (migração do banco de dados), mas não retornou contato depois disso. A trilha técnica segue só com Kemuel + Claude.
 
 *Tabela em aberto — atualizar conforme mais respostas chegarem no grupo.*
 
@@ -83,7 +84,21 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Fase 2 — Núcleo do edital
 
-*Ainda não iniciada. Prevista para as Quinzenas 3–4 (07/09–04/10/2026).*
+*Escopo principal (testes automatizados, JavaScript sem reload, acessibilidade, migração para Postgres) ainda não iniciado. Prevista para as Quinzenas 3–4 (07/09–04/10/2026). Um ajuste pontual de usabilidade mobile já foi feito nessa janela, registrado abaixo.*
+
+### Ajuste: correção de bug visual no histórico em telas de celular
+
+**Quando**: 26/09/2026 (Quinzena 4).
+
+**Contexto**: ao gerar telas do sistema como apoio visual para o Relatório Parcial, percebemos que, em telas de celular (≤480px), URLs longas no histórico de consultas quebravam no meio da palavra (por exemplo, "google.co" numa linha e "m" isolado na linha seguinte). O motivo era uma regra de CSS (`word-break: break-all`) herdada da versão para desktop, que corta o texto em qualquer ponto para caber na largura disponível, sem respeitar os limites da palavra.
+
+**O que foi feito**: na media query que trata telas pequenas (`static/style.css`), a regra `word-break: break-all` foi trocada por `overflow-wrap: anywhere`, que só quebra a URL quando necessário e sem cortar no meio de um trecho legível, além de `max-width: 100%` e alinhamento à esquerda para o texto não estourar a largura da tela.
+
+**Por que isso importa para o relatório**: é uma melhoria de usabilidade/acessibilidade mobile, encontrada e corrigida durante o próprio processo de revisão da interface — pode ser citada como parte do amadurecimento contínuo de UX entre o PI1 e o PI2, mesmo antes da Fase 2 formalmente começar.
+
+**Como foi validado**: testado visualmente em larguras de 320px, 360px e 390px (celulares mais comuns), sem estouro de layout e sem quebra no meio de palavra.
+
+**Capturas**: telas do protótipo em `capturas/prototipo-relatorio-parcial/` já refletem o CSS corrigido.
 
 ---
 

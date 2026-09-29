@@ -241,12 +241,15 @@ button:disabled {
 
     .url-hist {
         white-space: normal !important; 
-        word-break: break-all !important; 
+        word-break: normal !important;
+        overflow-wrap: anywhere !important;
         overflow: visible !important;
         text-overflow: clip !important;
         font-size: 0.85rem;
         line-height: 1.4;
         display: block !important;
         width: 100% !important;
+        max-width: 100% !important;
+        text-align: left;
     }
 }
