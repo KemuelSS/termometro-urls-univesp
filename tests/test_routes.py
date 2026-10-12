@@ -1,0 +1,82 @@
+from unittest import mock
+
+import termometro.routes as troutes
+
+
+def mocks_para(ip=None, dias=95, google=False, procon_blocklist=frozenset()):
+    return (
+        mock.patch.object(troutes, "resolver_ip", return_value=ip),
+        mock.patch.object(troutes, "consultar_google_safe_browsing", return_value=google),
+        mock.patch.object(troutes, "verificar_idade_dominio", return_value=dias),
+        mock.patch.object(troutes, "PROCON_BLOCKLIST", procon_blocklist),
+    )
+
+
+def test_get_index_sem_consultas_anteriores(client):
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "Termômetro de URLs" in resp.get_data(as_text=True)
+
+
+def test_post_url_vazia_nao_quebra(client):
+    resp = client.post("/", data={"url": ""})
+    assert resp.status_code == 200
+    assert "Resultado da Análise" not in resp.get_data(as_text=True)
+
+
+def test_post_url_segura(client):
+    patches = mocks_para(ip="172.217.29.78", dias=10564, google=False)
+    with patches[0], patches[1], patches[2], patches[3]:
+        resp = client.post("/", data={"url": "https://www.google.com"})
+    html = resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    assert "Seguro" in html
+    assert "95/100" in html
+    assert "172.217.29.78" in html
+
+
+def test_post_url_perigo_dominio_recente(client):
+    patches = mocks_para(ip="203.0.113.57", dias=12, google=False)
+    with patches[0], patches[1], patches[2], patches[3]:
+        resp = client.post("/", data={"url": "https://loja-ofertas-relampago.example"})
+    html = resp.get_data(as_text=True)
+    assert "Perigo" in html
+    assert "30/100" in html
+
+
+def test_post_url_dominio_invalido(client):
+    patches = mocks_para(ip=None, dias=-1, google=False)
+    with patches[0], patches[1], patches[2], patches[3]:
+        resp = client.post("/", data={"url": "https://conta-bloqueada-verificar.example"})
+    html = resp.get_data(as_text=True)
+    assert "Domínio inválido" in html
+    assert "10/100" in html
+    assert "IP Indisponível" in html
+
+
+def test_post_url_barrada_pelo_google(client):
+    patches = mocks_para(ip="203.0.113.71", dias=45, google=True)
+    with patches[0], patches[1], patches[2], patches[3]:
+        resp = client.post("/", data={"url": "https://premio-exclusivo-hoje.example"})
+    html = resp.get_data(as_text=True)
+    assert "lista negra de fraudes do Google" in html
+    assert "0/100" in html
+
+
+def test_post_url_na_lista_procon(client):
+    patches = mocks_para(ip="203.0.113.90", dias=0, google=False, procon_blocklist={"loja-fraudulenta.example"})
+    with patches[0], patches[1], patches[2], patches[3]:
+        resp = client.post("/", data={"url": "https://loja-fraudulenta.example"})
+    html = resp.get_data(as_text=True)
+    assert "ALERTA PROCON-SP" in html
+    assert "0/100" in html
+
+
+def test_historico_aparece_apos_consulta(client):
+    patches = mocks_para(ip="172.217.29.78", dias=10564, google=False)
+    with patches[0], patches[1], patches[2], patches[3]:
+        client.post("/", data={"url": "https://www.google.com"})
+        resp = client.post("/", data={"url": "https://www.google.com"})
+    html = resp.get_data(as_text=True)
+    assert "Últimas Consultas" in html
+    assert html.count("www.google.com") >= 2

@@ -84,7 +84,22 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Fase 2 — Núcleo do edital
 
-*Escopo principal (testes automatizados, JavaScript sem reload, acessibilidade, migração para Postgres) ainda não iniciado. Prevista para as Quinzenas 3–4 (07/09–04/10/2026). Um ajuste pontual de usabilidade mobile já foi feito nessa janela, registrado abaixo.*
+*Prevista para as Quinzenas 3–4 (07/09–04/10/2026); retomada em 11/10/2026 (Quinzena 5) por causa da viagem do Kemuel entre 15 e 22/10 — as entregas restantes fogem do "uma fase por quinzena", mas nenhum prazo oficial está em risco (Relatório Final só vence 06/11, carência 15/11).*
+
+### Testes automatizados
+
+**Quando**: 11/10/2026.
+
+**Contexto**: até aqui, a validação de cada mudança era manual (rodar o fluxo no navegador, conferir visualmente). O edital pede testes automatizados, e eles também servem de rede de segurança pras próximas mudanças desta mesma fase (JavaScript sem reload, migração de banco).
+
+**O que foi feito**: suíte com pytest em `tests/`, usando o test client do Flask e mocks das três fontes externas (Google Safe Browsing, WHOIS, resolução de IP) — o mesmo padrão já usado antes para gerar as telas do protótipo do Relatório Parcial:
+- `test_scoring.py`: testes unitários do motor de regras (`calcular_resultado`), cobrindo os 6 cenários de resultado e a ordem de prioridade entre Procon, Google e idade do domínio, incluindo os limiares exatos (29/30 dias, 179/180 dias).
+- `test_security_checks.py`: testes unitários de `extrair_dominio`, `resolver_ip` (IP público, privado, loopback, domínio inexistente) e `verificar_idade_dominio`/`consultar_google_safe_browsing` com as chamadas de rede mockadas.
+- `test_routes.py`: testes de integração da rota `/` via test client — página inicial, formulário vazio, os 6 cenários de resultado, e se o histórico aparece depois de uma consulta.
+
+**Como foi validado**: `pytest` executado localmente, 35 testes, todos passando (`35 passed in 4.73s`). Config em `pytest.ini`; dependência de teste isolada em `requirements-dev.txt` (não entra no deploy do Render).
+
+---
 
 ### Ajuste: correção de bug visual no histórico em telas de celular
 
