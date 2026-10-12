@@ -1,34 +1,50 @@
-import sqlite3
+from sqlalchemy import Column, DateTime, Integer, String, create_engine, func
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-from .config import DB_PATH
+Base = declarative_base()
 
 
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS consultas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            url TEXT NOT NULL,
-            trust_score INTEGER,
-            data_consulta TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    return conn
+class Consulta(Base):
+    __tablename__ = "consultas"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    url = Column(String, nullable=False)
+    trust_score = Column(Integer)
+    data_consulta = Column(DateTime, server_default=func.now())
+
+
+_engine = None
+_Session = None
+
+
+def init_db(database_url):
+    """Cria (ou recria) a engine e a tabela. Chamado pelo create_app(), e
+    também pelos testes, que apontam pra um SQLite temporário por teste."""
+    global _engine, _Session
+
+    connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+    _engine = create_engine(database_url, connect_args=connect_args)
+    _Session = sessionmaker(bind=_engine)
+    Base.metadata.create_all(_engine)
 
 
 def salvar_consulta(url, trust_score):
-    conn = get_db_connection()
-    conn.execute('INSERT INTO consultas (url, trust_score) VALUES (?, ?)', (url, trust_score))
-    conn.commit()
-    conn.close()
+    session = _Session()
+    try:
+        session.add(Consulta(url=url, trust_score=trust_score))
+        session.commit()
+    finally:
+        session.close()
 
 
 def listar_historico(limite=5):
-    conn = get_db_connection()
-    historico = conn.execute(
-        'SELECT url, trust_score FROM consultas ORDER BY id DESC LIMIT ?', (limite,)
-    ).fetchall()
-    conn.close()
-    return historico
+    session = _Session()
+    try:
+        return (
+            session.query(Consulta)
+            .order_by(Consulta.id.desc())
+            .limit(limite)
+            .all()
+        )
+    finally:
+        session.close()

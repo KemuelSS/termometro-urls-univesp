@@ -1,16 +1,15 @@
-import tempfile
 from unittest import mock
 
 import pytest
 
 from termometro import create_app
-import termometro.db as tdb
+from termometro import config as tconfig
 
 
 @pytest.fixture
 def db_path(tmp_path):
     path = tmp_path / "test.db"
-    with mock.patch.object(tdb, "DB_PATH", str(path)):
+    with mock.patch.object(tconfig, "DATABASE_URL", f"sqlite:///{path}"):
         yield str(path)
 
 
