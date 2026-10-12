@@ -99,6 +99,22 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Como foi validado**: `pytest` executado localmente, 35 testes, todos passando (`35 passed in 4.73s`). Config em `pytest.ini`; dependência de teste isolada em `requirements-dev.txt` (não entra no deploy do Render).
 
+### Acessibilidade e JavaScript sem reload (fetch/AJAX)
+
+**Quando**: 11/10/2026.
+
+**Contexto**: o formulário fazia um POST tradicional — a página inteira recarregava a cada análise. Além de menos fluido, isso também dificultava a acessibilidade: sem um reload, um leitor de tela não tem nenhum sinal automático de que o resultado mudou, a não ser que a região seja marcada explicitamente. Por isso as duas frentes foram feitas juntas.
+
+**O que foi feito**:
+1. **Acessibilidade**: campo de URL ganhou um `<label>` associado (visualmente oculto, mas lido por leitor de tela — o design só tinha um placeholder, que não substitui um label de verdade); as áreas de resultado e de histórico viraram regiões `aria-live="polite"` (sempre presentes no HTML, mesmo vazias), pra qualquer atualização de conteúdo ser anunciada automaticamente; o botão ganhou `aria-busy` refletindo o estado de carregamento, com um texto "Analisando URL, aguarde." acessível só pra leitor de tela.
+2. **JavaScript sem reload**: a lógica de análise foi extraída pra uma função única (`analisar_url` em `termometro/routes.py`), reaproveitada por duas rotas: a rota `/` continua existindo exatamente como antes (POST com reload, funciona sem JavaScript); uma rota nova, `POST /api/analisar`, faz a mesma análise e devolve o resultado em JSON. `static/app.js` intercepta o envio do formulário, chama essa rota via `fetch`, e atualiza o resultado e o histórico no DOM sem recarregar a página — com checagem de `window.fetch` no início do arquivo, então em um navegador muito antigo o form volta a funcionar do jeito tradicional.
+
+**Por que isso importa para o relatório**: cobre diretamente dois itens do núcleo do edital (script web/JavaScript e acessibilidade), e os dois ficam mais fortes um com o outro — a atualização dinâmica só é acessível porque a região tem `aria-live`.
+
+**Como foi validado**: os 35 testes anteriores + 3 novos (`test_routes.py`) cobrindo a rota `/api/analisar` (URL em branco retorna 400, resultado correto em JSON, histórico incluído na resposta) — total 38 testes, todos passando. Além disso, verificação de ponta a ponta num navegador real (Chrome via Playwright): subimos o servidor Flask de verdade, analisamos `google.com` de verdade (mesmas três fontes reais da Fase 1), e confirmamos que (a) a página não recarrega (uma variável JavaScript marcada antes do envio sobrevive depois do resultado aparecer), (b) o estado de carregamento (`aria-busy="true"`) aparece antes do resultado, e (c) o resultado e o histórico são atualizados corretamente na tela.
+
+**Capturas**: [`capturas/2026-10-11_fase2-fetch-sem-reload.png`](capturas/2026-10-11_fase2-fetch-sem-reload.png).
+
 ---
 
 ### Ajuste: correção de bug visual no histórico em telas de celular
