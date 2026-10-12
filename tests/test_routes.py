@@ -72,6 +72,33 @@ def test_post_url_na_lista_procon(client):
     assert "0/100" in html
 
 
+def test_api_analisar_url_vazia_retorna_400(client):
+    resp = client.post("/api/analisar", data={"url": ""})
+    assert resp.status_code == 400
+    assert "erro" in resp.get_json()
+
+
+def test_api_analisar_retorna_json_do_resultado(client):
+    patches = mocks_para(ip="172.217.29.78", dias=10564, google=False)
+    with patches[0], patches[1], patches[2], patches[3]:
+        resp = client.post("/api/analisar", data={"url": "https://www.google.com"})
+    assert resp.status_code == 200
+    corpo = resp.get_json()
+    assert corpo["resultado"]["score"] == 95
+    assert corpo["resultado"]["cor"] == "res-green"
+    assert corpo["ip_site"] == "172.217.29.78"
+    assert corpo["historico"][0]["url"] == "https://www.google.com"
+
+
+def test_api_analisar_perigo(client):
+    patches = mocks_para(ip="203.0.113.57", dias=12, google=False)
+    with patches[0], patches[1], patches[2], patches[3]:
+        resp = client.post("/api/analisar", data={"url": "https://loja-ofertas-relampago.example"})
+    corpo = resp.get_json()
+    assert corpo["resultado"]["score"] == 30
+    assert "Perigo" in corpo["resultado"]["status"]
+
+
 def test_historico_aparece_apos_consulta(client):
     patches = mocks_para(ip="172.217.29.78", dias=10564, google=False)
     with patches[0], patches[1], patches[2], patches[3]:
