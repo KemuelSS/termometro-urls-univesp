@@ -84,7 +84,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Fase 2 — Núcleo do edital
 
-*Prevista para as Quinzenas 3–4 (07/09–04/10/2026); retomada em 11/10/2026 (Quinzena 5) por causa da viagem do Kemuel entre 15 e 22/10 — as entregas restantes fogem do "uma fase por quinzena", mas nenhum prazo oficial está em risco (Relatório Final só vence 06/11, carência 15/11).*
+*Prevista para as Quinzenas 3–4 (07/09–04/10/2026); retomada e concluída em 11/10/2026 (Quinzena 5), concentrada num único dia por causa da viagem do Kemuel entre 15 e 22/10 — foge do ritmo "uma fase por quinzena", mas nenhum prazo oficial estava em risco (Relatório Final só vence 06/11, carência 15/11). Único item que depende de uma ação manual fora do código (provisionar o Postgres no Render) está marcado como pendente na última entrada abaixo.*
 
 ### Testes automatizados
 
@@ -114,6 +114,23 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 **Como foi validado**: os 35 testes anteriores + 3 novos (`test_routes.py`) cobrindo a rota `/api/analisar` (URL em branco retorna 400, resultado correto em JSON, histórico incluído na resposta) — total 38 testes, todos passando. Além disso, verificação de ponta a ponta num navegador real (Chrome via Playwright): subimos o servidor Flask de verdade, analisamos `google.com` de verdade (mesmas três fontes reais da Fase 1), e confirmamos que (a) a página não recarrega (uma variável JavaScript marcada antes do envio sobrevive depois do resultado aparecer), (b) o estado de carregamento (`aria-busy="true"`) aparece antes do resultado, e (c) o resultado e o histórico são atualizados corretamente na tela.
 
 **Capturas**: [`capturas/2026-10-11_fase2-fetch-sem-reload.png`](capturas/2026-10-11_fase2-fetch-sem-reload.png).
+
+### Migração do banco de dados para PostgreSQL via SQLAlchemy
+
+**Quando**: 11/10/2026.
+
+**Contexto**: era o problema estrutural que mais motivou essa fase (ver "Reavaliação da stack tecnológica" acima): o SQLite vivia num arquivo local, e o plano gratuito do Render não mantém disco persistente — o histórico de consultas sumia a cada novo deploy.
+
+**O que foi feito**: `termometro/db.py` foi reescrito usando SQLAlchemy ORM no lugar do `sqlite3` puro. Um modelo `Consulta` (mesma tabela `consultas`, mesmas colunas) substitui as queries SQL manuais. A engine é criada por uma função `init_db(database_url)`, chamada pelo `create_app()`, lendo a URL de uma variável de ambiente nova, `DATABASE_URL`:
+- **Se `DATABASE_URL` não estiver definida** (dev local, ou o Render antes do Postgres ser provisionado): cai automaticamente pro mesmo arquivo SQLite de sempre. Nada muda pra quem só quer rodar o projeto localmente.
+- **Se `DATABASE_URL` apontar pro Postgres**: usa Postgres de verdade, incluindo um ajuste pro formato antigo de URL (`postgres://`) que o Render ainda entrega e que o SQLAlchemy atual não aceita mais direto.
+- Dependências novas em `requirements.txt`: `SQLAlchemy` e `psycopg2-binary` (binário pra não depender de compilador C no ambiente de deploy).
+
+**Por que isso importa para o relatório**: resolve o problema estrutural citado desde a reavaliação de stack do início do PI2 — é o item que mais justifica tecnicamente essa fase.
+
+**Como foi validado**: os 38 testes automatizados (incluindo os de histórico) passam normalmente contra o novo `db.py`, já que por padrão eles caem no SQLite temporário. Rodado também um teste de fluxo completo fora do pytest (servidor real, requisição real). Como não há Postgres disponível neste ambiente de desenvolvimento pra testar de ponta a ponta, o SQL gerado pelo SQLAlchemy foi compilado especificamente contra o dialeto do Postgres (sem conectar em nada) pra conferir que o `CREATE TABLE` é válido — saiu `SERIAL`/`VARCHAR`/`TIMESTAMP` corretos.
+
+**Pendente, fora do alcance desta sessão**: este código por si só **não troca o banco em produção** — ele só passa a *suportar* Postgres. Pra realmente resolver a perda de histórico no Render, falta um passo manual que só quem tem acesso à conta do Render pode fazer: provisionar uma instância gerenciada de PostgreSQL lá e configurar a variável de ambiente `DATABASE_URL` apontando pra ela. Até isso ser feito, o deploy atual continua usando SQLite (igual a antes). Depois de configurado, vale um smoke test em produção pra confirmar que o histórico sobrevive a um novo deploy — passo que já estava previsto pra Fase 4.
 
 ---
 

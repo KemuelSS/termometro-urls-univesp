@@ -88,7 +88,7 @@ def analisar_json():
         ip_site=ip_site,
         url_analisada=url,
         historico=[
-            {"url": item["url"], "trust_score": item["trust_score"]}
+            {"url": item.url, "trust_score": item.trust_score}
             for item in historico_db
         ],
     )

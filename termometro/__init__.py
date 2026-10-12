@@ -20,6 +20,10 @@ def create_app():
         static_folder=os.path.join(BASE_DIR, 'static'),
     )
 
+    from . import config
+    from .db import init_db
+    init_db(config.DATABASE_URL)
+
     from .routes import bp
     app.register_blueprint(bp)
 
