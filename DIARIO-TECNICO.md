@@ -130,7 +130,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Como foi validado**: os 38 testes automatizados (incluindo os de histórico) passam normalmente contra o novo `db.py`, já que por padrão eles caem no SQLite temporário. Rodado também um teste de fluxo completo fora do pytest (servidor real, requisição real). Como não há Postgres disponível neste ambiente de desenvolvimento pra testar de ponta a ponta, o SQL gerado pelo SQLAlchemy foi compilado especificamente contra o dialeto do Postgres (sem conectar em nada) pra conferir que o `CREATE TABLE` é válido — saiu `SERIAL`/`VARCHAR`/`TIMESTAMP` corretos.
 
-**Pendente, fora do alcance desta sessão**: este código por si só **não troca o banco em produção** — ele só passa a *suportar* Postgres. Pra realmente resolver a perda de histórico no Render, falta um passo manual que só quem tem acesso à conta do Render pode fazer: provisionar uma instância gerenciada de PostgreSQL lá e configurar a variável de ambiente `DATABASE_URL` apontando pra ela. Até isso ser feito, o deploy atual continua usando SQLite (igual a antes). Depois de configurado, vale um smoke test em produção pra confirmar que o histórico sobrevive a um novo deploy — passo que já estava previsto pra Fase 4.
+**Passo manual concluído**: o código por si só não trocava o banco em produção, só passava a suportar Postgres — faltava provisionar a instância gerenciada no Render e configurar `DATABASE_URL` lá, o que só quem tem acesso à conta pode fazer. Kemuel criou o banco Postgres no Render e configurou a variável de ambiente no serviço web em 11/10/2026, disparando o redeploy automático. Verificação formal em produção (confirmar que o histórico sobrevive a um novo deploy) ainda está prevista pro smoke test da Fase 4.
 
 ---
 
@@ -152,7 +152,39 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Fase 3 — Diferenciais
 
-*Ainda não iniciada. Prevista para a Quinzena 5 (05/10–18/10/2026).*
+*Prevista e concluída na Quinzena 5 (05/10–18/10/2026), em 11/10/2026 — mesmo dia da Fase 2, pelo mesmo motivo (viagem do Kemuel entre 15 e 22/10).*
+
+### Score contínuo/ponderado e explicabilidade dos fatores
+
+**Quando**: 11/10/2026.
+
+**Contexto**: o motor de score (`termometro/scoring.py`) caía sempre num de 5 valores fixos (0, 10, 30, 60, 95), decididos por uma cadeia de `if/elif` sobre faixas de dias de vida do domínio. Dois domínios com 31 e 179 dias, por exemplo, recebiam exatamente o mesmo score (60) que um domínio com 1 dia a mais de diferença — e dois domínios com 1 e 29 dias também. Faltava granularidade, e o usuário não tinha como saber *por que* o score era aquele número.
+
+**O que foi feito**:
+1. **Score contínuo e ponderado**: Procon e Google Safe Browsing continuam como vetos definitivos (score 0 na hora — misturar um sinal de lista negra confirmada com sinais mais fracos deixaria o resultado perigosamente mais brando do que deveria). Fora esses dois casos, o score agora é uma combinação ponderada de dois fatores contínuos: idade do domínio via WHOIS (peso 70%, numa curva de saturação exponencial calibrada pra cruzar ~60 pontos perto dos 180 dias, o mesmo marco usado no modelo antigo) e validade da resolução de IP (peso 30% — um domínio que não resolve, ou resolve pra um endereço interno/privado, pesa contra o score). O resultado é uma nota de 0 a 100 em vez de 5 valores fixos.
+2. **Explicabilidade**: `calcular_resultado` passou a devolver também uma lista `fatores`, com a descrição, o peso e a contribuição em pontos de cada sinal que formou o score. Na interface, isso aparece como um `<details>` recolhível ("Como esse score foi calculado") dentro da caixa de resultado — funciona com ou sem JavaScript, e tanto na rota com reload quanto no fetch da Fase 2 (duplicado em `static/app.js`).
+
+**Por que isso importa para o relatório**: aborda diretamente os dois diferenciais do edital nessa frente — "score contínuo/ponderado" e "explicabilidade dos fatores do score" — e corrige uma limitação real do modelo anterior (perda de granularidade entre domínios de idades próximas).
+
+**Como foi validado**: suíte de testes de `scoring.py` reescrita (29 testes) cobrindo: prioridade de Procon sobre Google sobre os fatores ponderados; `fonte_principal` correto nos 5 casos possíveis (procon, google, domínio inválido, IP inválido, idade normal); score sempre entre 0 e 100; monotonicidade (domínio mais antigo nunca pontua pior que um mais novo, IP inválido nunca pontua melhor que IP válido pra mesma idade); cor da faixa batendo com o score; soma das contribuições dos fatores batendo com o score final. Verificado também num navegador real: análise de `google.com` (10618 dias) retornou 100/100 com a quebra "peso 70% · contribuiu 70 pts" (idade) + "peso 30% · contribuiu 30 pts" (IP) — 70+30=100, conferindo.
+
+**Capturas**: [`capturas/2026-10-11_fase3-explicabilidade-score.png`](capturas/2026-10-11_fase3-explicabilidade-score.png).
+
+### Dashboard de análise de dados
+
+**Quando**: 11/10/2026.
+
+**Contexto**: item opcional do edital que o grupo assumiu como meta desde o início (ver "Decisão de continuar o projeto"). O histórico de consultas já existia no banco; faltava uma visão agregada dele.
+
+**O que foi feito**: nova rota `/dashboard` (`termometro/routes.py`), com uma função de agregação `estatisticas_dashboard()` em `termometro/db.py` que lê todas as consultas registradas e calcula: distribuição de scores por faixa (seguro/atenção/perigo), os domínios mais consultados (ordenados por frequência) e a taxa de detecção por fonte — aproveitando a coluna nova `fonte_principal` (adicionada ao modelo `Consulta` nesta mesma sessão) que registra qual sinal decidiu o resultado de cada consulta (procon, google, domínio inválido, IP inválido ou idade do domínio). Renderizado em `templates/dashboard.html` com barras de progresso em CSS puro, sem nenhuma biblioteca de gráficos nova — consistente com a filosofia de frontend leve do projeto. Link pro dashboard adicionado no rodapé da página principal.
+
+**Por que isso importa para o relatório**: cobre o item opcional de análise de dados do edital, usando dado real já coletado pela própria aplicação (sem necessidade de fonte externa).
+
+**Como foi validado**: `tests/test_db.py` (4 testes) cobrindo a agregação isoladamente — distribuição vazia, distribuição por faixa, ordenação dos domínios mais consultados, contagem por fonte. Mais 2 testes de integração da rota `/dashboard` (estado vazio e com dados). Verificado também visualmente: populamos o banco com 10 consultas de cenários variados (incluindo Procon, Google e domínio inválido) e conferimos a olho que os números do dashboard batem exatamente com o esperado (4 seguro / 2 atenção / 4 perigo; 7 idade_dominio / 1 domínio_inválido / 1 google / 1 procon).
+
+**Capturas**: [`capturas/2026-10-11_fase3-dashboard.png`](capturas/2026-10-11_fase3-dashboard.png).
+
+**Nota sobre dado existente**: a coluna `fonte_principal` é nova; consultas já salvas antes dessa mudança (se existirem num banco já em produção) vão aparecer como "desconhecida" no dashboard, já que não têm esse dado retroativamente. Não é um problema agora porque a Fase 2 acabou de configurar o Postgres em produção hoje mesmo — o histórico em produção, se já existir, é recente.
 
 ---
 

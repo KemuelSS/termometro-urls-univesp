@@ -158,7 +158,39 @@ button:disabled {
     margin-bottom: 5px; 
 }
 
-.res-green { 
+.fatores-detalhe {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fatores-detalhe summary {
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.fatores-lista {
+    list-style: none;
+    margin-top: 10px;
+}
+
+.fatores-lista li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.fator-peso {
+    white-space: nowrap;
+    opacity: 0.7;
+}
+
+.res-green {
     background-color: rgba(16, 185, 129, 0.1); 
     border-color: #10b981; 
     color: #34d399;
@@ -230,6 +262,99 @@ button:disabled {
 .bg-orange { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
 .bg-red { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
 
+
+/* ==============================================
+   DASHBOARD DE ANÁLISE DE DADOS
+   ============================================== */
+
+.dashboard-container {
+    max-width: 650px;
+    text-align: left;
+}
+
+.dashboard-container h1 {
+    text-align: center;
+}
+
+.dashboard-container .subtitle {
+    text-align: center;
+}
+
+.dashboard-total {
+    text-align: center;
+    color: #cbd5e1;
+    margin-bottom: 20px;
+}
+
+.dashboard-vazio {
+    text-align: center;
+    color: #94a3b8;
+    padding: 20px 0;
+}
+
+.dashboard-secao {
+    margin-top: 30px;
+    border-top: 2px solid rgba(255, 255, 255, 0.05);
+    padding-top: 20px;
+}
+
+.dashboard-secao h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 15px;
+}
+
+.dashboard-barras {
+    list-style: none;
+}
+
+.dashboard-barras li {
+    margin-bottom: 14px;
+}
+
+.dashboard-barra-rotulo {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    margin-bottom: 5px;
+}
+
+.dashboard-barra-fundo {
+    background-color: rgba(15, 23, 42, 0.6);
+    border-radius: 8px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.dashboard-barra-preenchimento {
+    height: 100%;
+    border-radius: 8px;
+    min-width: 2px;
+}
+
+.dashboard-barra-preenchimento.bg-green { background-color: #10b981; }
+.dashboard-barra-preenchimento.bg-orange { background-color: #f59e0b; }
+.dashboard-barra-preenchimento.bg-red { background-color: #ef4444; }
+.dashboard-barra-preenchimento.bg-azul { background-color: #3b82f6; }
+
+.dashboard-lista-dominios {
+    list-style: none;
+}
+
+.dashboard-lista-dominios li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: rgba(15, 23, 42, 0.5);
+    margin-bottom: 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.85rem;
+}
 
 /* ==============================================
    PROJETO V2: RESPONSIVIDADE PARA SMARTPHONES

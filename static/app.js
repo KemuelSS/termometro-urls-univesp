@@ -22,9 +22,29 @@
     }
 
     function corDoScore(score) {
-        if (score >= 70) return 'bg-green';
-        if (score >= 40) return 'bg-orange';
+        if (score >= 80) return 'bg-green';
+        if (score >= 50) return 'bg-orange';
         return 'bg-red';
+    }
+
+    function renderFatores(fatores) {
+        if (!fatores || !fatores.length) {
+            return '';
+        }
+        var itens = fatores.map(function (fator) {
+            return (
+                '<li>' +
+                    '<span class="fator-descricao">' + escapeHtml(fator.descricao) + '</span>' +
+                    '<span class="fator-peso">peso ' + Math.round(fator.peso * 100) + '% · contribuiu ' + fator.contribuicao + ' pts</span>' +
+                '</li>'
+            );
+        }).join('');
+        return (
+            '<details class="fatores-detalhe">' +
+                '<summary>Como esse score foi calculado</summary>' +
+                '<ul class="fatores-lista">' + itens + '</ul>' +
+            '</details>'
+        );
     }
 
     function renderResultado(resultado, ipSite) {
@@ -38,6 +58,7 @@
                 '<p>' + escapeHtml(resultado.status) + '</p>' +
                 '<small>Score de Confiança: <strong>' + resultado.score + '/100</strong></small><br>' +
                 '<small>IP do Servidor: <strong>' + escapeHtml(ipSite) + '</strong></small>' +
+                renderFatores(resultado.fatores) +
             '</div>';
     }
 

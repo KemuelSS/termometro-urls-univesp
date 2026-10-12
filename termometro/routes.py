@@ -3,7 +3,7 @@ import logging
 from flask import Blueprint, current_app, jsonify, render_template, request, send_from_directory
 
 from .blocklist import PROCON_BLOCKLIST
-from .db import listar_historico, salvar_consulta
+from .db import estatisticas_dashboard, listar_historico, salvar_consulta
 from .scoring import calcular_resultado
 from .security_checks import (
     consultar_google_safe_browsing,
@@ -27,7 +27,9 @@ def analisar_url(url):
         logger.warning("Falha ao extrair domínio de %r, usando fallback.", url)
         dominio_limpo = url.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
 
-    ip_site = resolver_ip(dominio_limpo) or "IP Indisponível"
+    ip_resolvido = resolver_ip(dominio_limpo)
+    ip_valido = ip_resolvido is not None
+    ip_site = ip_resolvido or "IP Indisponível"
 
     na_lista_procon = dominio_limpo.lower() in PROCON_BLOCKLIST
 
@@ -38,8 +40,8 @@ def analisar_url(url):
         golpe_confirmado = consultar_google_safe_browsing(url)
         dias_de_vida = verificar_idade_dominio(url)
 
-    resultado = calcular_resultado(na_lista_procon, golpe_confirmado, dias_de_vida)
-    salvar_consulta(url, resultado["score"])
+    resultado = calcular_resultado(na_lista_procon, golpe_confirmado, dias_de_vida, ip_valido)
+    salvar_consulta(url, resultado["score"], resultado["fonte_principal"])
     return resultado, ip_site
 
 
@@ -69,6 +71,11 @@ def index():
         historico=historico_db,
         ip_site=ip_site,
     )
+
+
+@bp.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html', stats=estatisticas_dashboard())
 
 
 @bp.route('/api/analisar', methods=('POST',))
