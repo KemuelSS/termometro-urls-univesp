@@ -212,4 +212,16 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Como foi validado**: os comandos documentados foram os mesmos efetivamente usados durante o desenvolvimento desta sessão (mesma sequência de setup).
 
-**Pendente nesta fase**: `Procfile` e `runtime.txt` (reprodutibilidade do ambiente de deploy no Render) e o smoke test final em produção — aguardando Kemuel confirmar a versão de Python configurada no Render antes de fixar `runtime.txt`, pra não arriscar quebrar o deploy já funcionando.
+**Pendente nesta fase**: `runtime.txt` (reprodutibilidade da versão de Python no Render) e o smoke test final em produção — aguardando Kemuel confirmar a versão de Python configurada no Render antes de fixar `runtime.txt`, pra não arriscar quebrar o deploy já funcionando. `Procfile` já foi feito (ver commit desta mesma data).
+
+### Merge pra produção e correção de um bug real de deploy (driver do Postgres)
+
+**Quando**: 25/10/2026.
+
+**Contexto**: ao revisar o painel do Render pra achar a versão do Python, percebemos um problema mais sério: o deploy do Render usa a branch `main`, mas Fase 2 e Fase 3 inteiras estavam só na `v2-responsividade`, nunca mescladas de volta — ou seja, nada disso estava no ar, e a variável `DATABASE_URL` configurada em produção no dia 11/10 estava sem efeito nenhum, porque o código que rodava ainda usava `sqlite3` puro e nem sabia que essa variável existia.
+
+**O que foi feito**: aberto o PR #4 (`v2-responsividade` → `main`) no GitHub, mesclado por Kemuel. O Render disparou o redeploy automático — que falhou (`ModuleNotFoundError: No module named 'psycopg'`). A causa: o SQLAlchemy 2.1 resolve o driver padrão de uma URL `postgresql://` sem sufixo pro dialeto `psycopg` (versão 3), não mais `psycopg2` — e o `requirements.txt` só tinha `psycopg2-binary` instalado. Corrigido trocando a dependência pra `psycopg[binary]` (psycopg 3), que é o que o SQLAlchemy realmente tenta importar nessa versão.
+
+**Por que isso importa para o relatório**: é um lembrete real de que validar a geração de SQL contra um dialeto (feito na Fase 2) não é a mesma coisa que validar a resolução do driver/dependência — a brecha só apareceu com um deploy de verdade.
+
+**Como foi validado**: localmente, `create_engine` com uma URL Postgres fake agora resolve pro driver `psycopg` sem erro (antes, o mesmo teste reproduzia o `ModuleNotFoundError` do Render). Reinstalação limpa do `requirements.txt` num venv descartável, do zero, confirmando que a dependência certa é puxada. Os 61 testes automatizados continuam passando (não usam Postgres de verdade, então não seriam afetados por esse tipo de erro — ponto de atenção pra depois). Validação final em produção pendente do próximo deploy no Render.
