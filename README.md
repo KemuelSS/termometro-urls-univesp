@@ -1,9 +1,10 @@
 # 🛡️ Termômetro de Confiança de URLs
 
 ![Status](https://img.shields.io/badge/Status-Concluido-success)
-![Versão](https://img.shields.io/badge/Versão-2.1%20(Procon%20Update)-blue)
-![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![Versão](https://img.shields.io/badge/Versão-3.0%20(PI2)-blue)
+![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-Web%20Framework-000000?logo=flask&logoColor=white)
+![Testes](https://github.com/KemuelSS/termometro-urls-univesp/actions/workflows/tests.yml/badge.svg)
 
 Um sistema web desenvolvido em Python (Flask) para analisar links suspeitos e alertar os usuários sobre possíveis riscos de fraude, phishing e malware. Este projeto faz parte do escopo acadêmico do **Projeto Integrador - Univesp**.
 
@@ -32,8 +33,21 @@ O sistema utiliza um motor de regras inteligente que cruza dados de três fontes
    - Para links que escapam das duas primeiras listas, o sistema extrai o domínio e consulta a data de criação do servidor.
    - Domínios recém-criados recebem pontuações baixas (**Alto Risco**), mitigando golpes que acabaram de nascer.
 
-## ✨ Evoluções e Melhorias da Versão 2.1 (Premium & Procon Update)
-A nova versão trouxe uma reformulação completa focada em padrões profissionais de mercado, combinando design de alta autoridade, otimização de infraestrutura e experiência do usuário (UX):
+## ✨ Evolução da Plataforma
+
+### PI2 — Núcleo do Edital e Diferenciais (Versão 3.0)
+Segunda fase do projeto, focada em consolidar os requisitos técnicos do edital e agregar diferenciais analíticos à plataforma:
+
+* **Score Contínuo e Ponderado:** o motor de regras deixou de usar 5 valores fixos de score e passou a calcular uma nota de 0 a 100, combinando de forma ponderada a idade do domínio (WHOIS) e a validade da resolução de IP. Sinais de lista negra confirmada (Procon-SP e Google Safe Browsing) continuam resultando em bloqueio imediato.
+* **Explicabilidade do Score:** cada resultado traz o detalhamento de quais fatores formaram a nota e o peso de cada um, visível diretamente na interface.
+* **Dashboard de Análise de Dados:** página nova (`/dashboard`) com estatísticas agregadas do histórico de consultas — distribuição de scores por faixa de risco, domínios mais consultados e taxa de detecção por fonte.
+* **Interface Dinâmica (JavaScript sem reload):** o formulário de consulta atualiza o resultado via fetch/AJAX, sem recarregar a página, mantendo compatibilidade com navegadores sem suporte a JavaScript.
+* **Acessibilidade:** rótulo associado ao campo de URL, regiões de leitura dinâmica (`aria-live`) para leitores de tela anunciarem atualizações automaticamente, e estado de carregamento acessível.
+* **Persistência em PostgreSQL:** migração da camada de dados do SQLite local para uma instância gerenciada de PostgreSQL via SQLAlchemy ORM, resolvendo a perda do histórico de consultas a cada novo deploy no ambiente de hospedagem.
+* **Testes Automatizados e Integração Contínua:** suíte de testes com pytest cobrindo o motor de score, as verificações de segurança e as rotas da aplicação, executada automaticamente a cada push via GitHub Actions.
+
+### PI1 — Versão 2.1 (Premium & Procon Update)
+Primeira evolução da plataforma, focada em padrões profissionais de mercado, combinando design de alta autoridade, otimização de infraestrutura e experiência do usuário (UX):
 
 * **Inteligência de Ameaças Regional:** Implementação nativa da lista de sites a evitar do Procon-SP, cobrindo uma falha comum em APIs globais (que focam em vírus, mas deixam passar golpes comerciais brasileiros).
 * **Interface Dark Mode Premium:** Transição visual completa para uma paleta monocromática baseada em tons de *Slate* com efeito *Glassmorphism* escuro, projetado para simular painéis de segurança corporativos e destacar as cores dos alertas.
@@ -86,11 +100,23 @@ pytest
 
 ## 👥 Autores e Papéis (Grupo PI - Univesp)
 
-* **Kemuel dos Santos Sousa** - *Product Owner / QA / UI-UX* (Liderança do produto, garantia de qualidade, engenharia de front-end responsivo e design de interface).
-  
+Grupo formado a partir do PI1 e ampliado para 8 integrantes no PI2:
+
+* **Ana Cláudia de Paula Fontanezi** - *Redação e Documentação Acadêmica* (Elaboração do Plano de Ação e apoio na redação dos relatórios oficiais).
+
+* **Camila dos Santos Cruz** - *Pesquisa e Redação* (Pesquisas e textos de apoio aos relatórios acadêmicos).
+
+* **Daniel Segundo de Carvalho** - *Apoio ao Projeto*.
+
+* **Eliesel de Melo Tanada** - *Design e Apresentação* (Material visual, roteiro e produção do vídeo final de apresentação).
+
 * **Karoline Thaiane Cumim** - *Technical Writer & UX Researcher* (Documentação técnica, elaboração dos relatórios acadêmicos oficiais e estruturação da coleta de feedbacks).
-  
+
+* **Kathelyn Vitoria Pergentino Reis Anastacio** - *Análise de Dados* (Interpretação dos dados coletados pela plataforma).
+
 * **Kelvin Souza Cardoso da Costa** - *Tech Lead & Cloud/DevOps* (Definição da stack tecnológica, desenvolvimento da arquitetura de software tripla e estratégia de deploy ágil).
+
+* **Kemuel dos Santos Sousa** - *Product Owner / QA / UI-UX* (Liderança do produto, garantia de qualidade, engenharia de front-end responsivo e design de interface).
 
 ---
 *Projeto desenvolvido para fins acadêmicos - Universidade Virtual do Estado de São Paulo (Univesp)*
