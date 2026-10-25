@@ -190,7 +190,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Fase 4 — Deploy e entrega
 
-*Prevista para as Quinzenas 6–7 (19/10–06/11/2026). Retomada em 25/10/2026, quando Kemuel voltou da viagem. Nesse ponto, todos os itens obrigatórios do edital (framework web, banco de dados, script web/JavaScript, nuvem, uso de API, acessibilidade, controle de versão, testes) e o item opcional (análise de dados) já estavam concluídos desde a Fase 2/3 — esta fase é sobre reprodutibilidade de deploy, integração contínua e documentação, não sobre funcionalidade pendente.*
+*Prevista para as Quinzenas 6–7 (19/10–06/11/2026). Retomada e concluída em 25/10/2026, quando Kemuel voltou da viagem. Nesse ponto, todos os itens obrigatórios do edital (framework web, banco de dados, script web/JavaScript, nuvem, uso de API, acessibilidade, controle de versão, testes) e o item opcional (análise de dados) já estavam concluídos desde a Fase 2/3 — esta fase foi sobre reprodutibilidade de deploy, integração contínua e documentação, não sobre funcionalidade pendente. Com isso, o roadmap técnico das 4 fases do PI2 está completo — falta só a redação final do relatório pelo resto do grupo.*
 
 ### Integração contínua (GitHub Actions)
 
@@ -212,7 +212,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Como foi validado**: os comandos documentados foram os mesmos efetivamente usados durante o desenvolvimento desta sessão (mesma sequência de setup).
 
-**Pendente nesta fase**: `runtime.txt` (reprodutibilidade da versão de Python no Render) e o smoke test final em produção — aguardando Kemuel confirmar a versão de Python configurada no Render antes de fixar `runtime.txt`, pra não arriscar quebrar o deploy já funcionando. `Procfile` já foi feito (ver commit desta mesma data).
+**Versão de Python fixada**: Kemuel checou o log de build do Render e achou `Using Python version 3.14.3 (default)` — ou seja, o Render já usa 3.14.3 por conta própria, sem nada fixado no repositório (coincide com a versão usada em desenvolvimento local). Criado `.python-version` com `3.14.3` na raiz do repositório — essa é a convenção atual do Render pra fixar versão (não `runtime.txt`, que é convenção antiga do Heroku e não é lida por eles). Zero mudança de comportamento agora (mesma versão que já rodava), só torna explícito e versionado o que antes dependia do "default" do Render, que pode mudar no futuro sem aviso. `Procfile` já tinha sido feito, e o smoke test em produção já foi validado (ver entrada abaixo) — Fase 4 concluída.
 
 ### Merge pra produção e correção de um bug real de deploy (driver do Postgres)
 
@@ -224,4 +224,6 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Por que isso importa para o relatório**: é um lembrete real de que validar a geração de SQL contra um dialeto (feito na Fase 2) não é a mesma coisa que validar a resolução do driver/dependência — a brecha só apareceu com um deploy de verdade.
 
-**Como foi validado**: localmente, `create_engine` com uma URL Postgres fake agora resolve pro driver `psycopg` sem erro (antes, o mesmo teste reproduzia o `ModuleNotFoundError` do Render). Reinstalação limpa do `requirements.txt` num venv descartável, do zero, confirmando que a dependência certa é puxada. Os 61 testes automatizados continuam passando (não usam Postgres de verdade, então não seriam afetados por esse tipo de erro — ponto de atenção pra depois). Validação final em produção pendente do próximo deploy no Render.
+**Como foi validado**: localmente, `create_engine` com uma URL Postgres fake agora resolve pro driver `psycopg` sem erro (antes, o mesmo teste reproduzia o `ModuleNotFoundError` do Render). Reinstalação limpa do `requirements.txt` num venv descartável, do zero, confirmando que a dependência certa é puxada. Os 61 testes automatizados continuam passando (não usam Postgres de verdade, então não seriam afetados por esse tipo de erro — ponto de atenção pra depois).
+
+**Validado em produção** (25/10/2026, após o merge do PR #5): Render redeployou com sucesso. A home mostra o link novo "Ver dashboard de análise de dados" (confirma que o template atualizado está no ar) e a rota `/dashboard` carrega sem erro, mostrando "Total de consultas registradas: 0" — o zero é esperado (primeira vez que o Postgres de verdade está sendo usado, tabela recém-criada vazia), e o fato de não ter dado erro já confirma que a conexão com o banco gerenciado está funcionando. Smoke test considerado concluído pra essa frente.
