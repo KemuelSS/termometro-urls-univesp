@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Termômetro de URLs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container dashboard-container">
+        <h1 class="titulo-principal">
+            <img src="{{ url_for('static', filename='escudo.png') }}" alt="Ícone Escudo" width="35" style="vertical-align: middle; margin-right: 10px;">
+            Dashboard de Análise de Dados
+        </h1>
+        <p class="subtitle">Agregados sobre todas as consultas já feitas no Termômetro de URLs.</p>
+
+        <p class="dashboard-total">Total de consultas registradas: <strong>{{ stats.total }}</strong></p>
+
+        {% if stats.total == 0 %}
+            <p class="dashboard-vazio">Ainda não há consultas suficientes pra gerar estatísticas. Analise algumas URLs primeiro.</p>
+        {% else %}
+            <section class="dashboard-secao">
+                <h2>Distribuição de scores</h2>
+                <ul class="dashboard-barras">
+                    {% for faixa, quantidade in stats.faixas_score.items() %}
+                        <li>
+                            <div class="dashboard-barra-rotulo">
+                                <span>{{ faixa }}</span>
+                                <span>{{ quantidade }}</span>
+                            </div>
+                            <div class="dashboard-barra-fundo">
+                                <div class="dashboard-barra-preenchimento
+                                    {% if 'seguro' in faixa %}bg-green
+                                    {% elif 'atenção' in faixa %}bg-orange
+                                    {% else %}bg-red{% endif %}"
+                                    style="width: {{ (quantidade / stats.total * 100) if stats.total else 0 }}%;"></div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="dashboard-secao">
+                <h2>Domínios mais consultados</h2>
+                <ol class="dashboard-lista-dominios">
+                    {% for url, quantidade in stats.top_dominios %}
+                        <li>
+                            <span class="url-hist">{{ url }}</span>
+                            <span class="score-badge bg-green">{{ quantidade }}x</span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            </section>
+
+            <section class="dashboard-secao">
+                <h2>Taxa de detecção por fonte</h2>
+                <ul class="dashboard-barras">
+                    {% for fonte, quantidade in stats.fontes.items() %}
+                        <li>
+                            <div class="dashboard-barra-rotulo">
+                                <span>{{ fonte }}</span>
+                                <span>{{ quantidade }} ({{ ((quantidade / stats.total * 100) if stats.total else 0) | round(1) }}%)</span>
+                            </div>
+                            <div class="dashboard-barra-fundo">
+                                <div class="dashboard-barra-preenchimento bg-azul" style="width: {{ (quantidade / stats.total * 100) if stats.total else 0 }}%;"></div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        <p style="margin-top: 30px;"><a href="{{ url_for('main.index') }}" style="color: #64748b;">&larr; Voltar pro Termômetro de URLs</a></p>
+    </div>
+
+    <footer style="text-align: center; margin-top: 40px; margin-bottom: 20px; color: #64748b; font-size: 0.85rem;">
+        <p>Desenvolvido por Grupo 8 | Projeto Integrador Univesp 2026</p>
+    </footer>
+</body>
+</html>

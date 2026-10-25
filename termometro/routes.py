@@ -1,9 +1,9 @@
 import logging
 
-from flask import Blueprint, current_app, render_template, request, send_from_directory
+from flask import Blueprint, current_app, jsonify, render_template, request, send_from_directory
 
 from .blocklist import PROCON_BLOCKLIST
-from .db import listar_historico, salvar_consulta
+from .db import estatisticas_dashboard, listar_historico, salvar_consulta
 from .scoring import calcular_resultado
 from .security_checks import (
     consultar_google_safe_browsing,
@@ -15,6 +15,34 @@ from .security_checks import (
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('main', __name__)
+
+
+def analisar_url(url):
+    """Roda a triangulação de segurança (Procon > Google Safe Browsing > WHOIS)
+    pra uma URL e já salva a consulta no histórico. Usado tanto pela rota
+    com reload (fallback sem JS) quanto pelo endpoint JSON do fetch."""
+    try:
+        dominio_limpo = extrair_dominio(url)
+    except ValueError:
+        logger.warning("Falha ao extrair domínio de %r, usando fallback.", url)
+        dominio_limpo = url.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
+
+    ip_resolvido = resolver_ip(dominio_limpo)
+    ip_valido = ip_resolvido is not None
+    ip_site = ip_resolvido or "IP Indisponível"
+
+    na_lista_procon = dominio_limpo.lower() in PROCON_BLOCKLIST
+
+    if na_lista_procon:
+        golpe_confirmado = False
+        dias_de_vida = 0
+    else:
+        golpe_confirmado = consultar_google_safe_browsing(url)
+        dias_de_vida = verificar_idade_dominio(url)
+
+    resultado = calcular_resultado(na_lista_procon, golpe_confirmado, dias_de_vida, ip_valido)
+    salvar_consulta(url, resultado["score"], resultado["fonte_principal"])
+    return resultado, ip_site
 
 
 @bp.route('/favicon.ico')
@@ -33,26 +61,7 @@ def index():
 
         if url:
             url_analisada = url
-
-            try:
-                dominio_limpo = extrair_dominio(url)
-            except ValueError:
-                logger.warning("Falha ao extrair domínio de %r, usando fallback.", url)
-                dominio_limpo = url.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
-
-            ip_site = resolver_ip(dominio_limpo) or "IP Indisponível"
-
-            na_lista_procon = dominio_limpo.lower() in PROCON_BLOCKLIST
-
-            if na_lista_procon:
-                golpe_confirmado = False
-                dias_de_vida = 0
-            else:
-                golpe_confirmado = consultar_google_safe_browsing(url)
-                dias_de_vida = verificar_idade_dominio(url)
-
-            resultado = calcular_resultado(na_lista_procon, golpe_confirmado, dias_de_vida)
-            salvar_consulta(url, resultado["score"])
+            resultado, ip_site = analisar_url(url)
 
     historico_db = listar_historico()
     return render_template(
@@ -61,4 +70,32 @@ def index():
         url_analisada=url_analisada,
         historico=historico_db,
         ip_site=ip_site,
+    )
+
+
+@bp.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html', stats=estatisticas_dashboard())
+
+
+@bp.route('/api/analisar', methods=('POST',))
+def analisar_json():
+    """Mesma análise da rota principal, mas sem recarregar a página: usada
+    pelo static/app.js via fetch. Se o JS estiver desabilitado, o form
+    continua funcionando normalmente pela rota '/' acima."""
+    url = request.form.get('url', '').strip()
+    if not url:
+        return jsonify(erro="URL em branco."), 400
+
+    resultado, ip_site = analisar_url(url)
+    historico_db = listar_historico()
+
+    return jsonify(
+        resultado=resultado,
+        ip_site=ip_site,
+        url_analisada=url,
+        historico=[
+            {"url": item.url, "trust_score": item.trust_score}
+            for item in historico_db
+        ],
     )

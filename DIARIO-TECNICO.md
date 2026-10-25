@@ -51,8 +51,9 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 | Ana Claudia | Textos — se ofereceu pra esboçar o Plano de Ação e enviar pro grupo avaliar |
 | Kathelyn | Análise de dados (avisou que também ajuda no que mais precisar) |
 | Karoline | Entrega dos relatórios e materiais na plataforma (AVA) |
+| Kelvin | Apoio geral, no que for necessário |
 
-**Ainda sem frente definida**: Kelvin e Daniel.
+**Daniel** chegou a demonstrar interesse em ajudar na parte técnica (migração do banco de dados), mas não retornou contato depois disso. A trilha técnica segue só com Kemuel + Claude.
 
 *Tabela em aberto — atualizar conforme mais respostas chegarem no grupo.*
 
@@ -83,13 +84,107 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Fase 2 — Núcleo do edital
 
-*Ainda não iniciada. Prevista para as Quinzenas 3–4 (07/09–04/10/2026).*
+*Prevista para as Quinzenas 3–4 (07/09–04/10/2026); retomada e concluída em 11/10/2026 (Quinzena 5), concentrada num único dia por causa da viagem do Kemuel entre 15 e 22/10 — foge do ritmo "uma fase por quinzena", mas nenhum prazo oficial estava em risco (Relatório Final só vence 06/11, carência 15/11). Único item que depende de uma ação manual fora do código (provisionar o Postgres no Render) está marcado como pendente na última entrada abaixo.*
+
+### Testes automatizados
+
+**Quando**: 11/10/2026.
+
+**Contexto**: até aqui, a validação de cada mudança era manual (rodar o fluxo no navegador, conferir visualmente). O edital pede testes automatizados, e eles também servem de rede de segurança pras próximas mudanças desta mesma fase (JavaScript sem reload, migração de banco).
+
+**O que foi feito**: suíte com pytest em `tests/`, usando o test client do Flask e mocks das três fontes externas (Google Safe Browsing, WHOIS, resolução de IP) — o mesmo padrão já usado antes para gerar as telas do protótipo do Relatório Parcial:
+- `test_scoring.py`: testes unitários do motor de regras (`calcular_resultado`), cobrindo os 6 cenários de resultado e a ordem de prioridade entre Procon, Google e idade do domínio, incluindo os limiares exatos (29/30 dias, 179/180 dias).
+- `test_security_checks.py`: testes unitários de `extrair_dominio`, `resolver_ip` (IP público, privado, loopback, domínio inexistente) e `verificar_idade_dominio`/`consultar_google_safe_browsing` com as chamadas de rede mockadas.
+- `test_routes.py`: testes de integração da rota `/` via test client — página inicial, formulário vazio, os 6 cenários de resultado, e se o histórico aparece depois de uma consulta.
+
+**Como foi validado**: `pytest` executado localmente, 35 testes, todos passando (`35 passed in 4.73s`). Config em `pytest.ini`; dependência de teste isolada em `requirements-dev.txt` (não entra no deploy do Render).
+
+### Acessibilidade e JavaScript sem reload (fetch/AJAX)
+
+**Quando**: 11/10/2026.
+
+**Contexto**: o formulário fazia um POST tradicional — a página inteira recarregava a cada análise. Além de menos fluido, isso também dificultava a acessibilidade: sem um reload, um leitor de tela não tem nenhum sinal automático de que o resultado mudou, a não ser que a região seja marcada explicitamente. Por isso as duas frentes foram feitas juntas.
+
+**O que foi feito**:
+1. **Acessibilidade**: campo de URL ganhou um `<label>` associado (visualmente oculto, mas lido por leitor de tela — o design só tinha um placeholder, que não substitui um label de verdade); as áreas de resultado e de histórico viraram regiões `aria-live="polite"` (sempre presentes no HTML, mesmo vazias), pra qualquer atualização de conteúdo ser anunciada automaticamente; o botão ganhou `aria-busy` refletindo o estado de carregamento, com um texto "Analisando URL, aguarde." acessível só pra leitor de tela.
+2. **JavaScript sem reload**: a lógica de análise foi extraída pra uma função única (`analisar_url` em `termometro/routes.py`), reaproveitada por duas rotas: a rota `/` continua existindo exatamente como antes (POST com reload, funciona sem JavaScript); uma rota nova, `POST /api/analisar`, faz a mesma análise e devolve o resultado em JSON. `static/app.js` intercepta o envio do formulário, chama essa rota via `fetch`, e atualiza o resultado e o histórico no DOM sem recarregar a página — com checagem de `window.fetch` no início do arquivo, então em um navegador muito antigo o form volta a funcionar do jeito tradicional.
+
+**Por que isso importa para o relatório**: cobre diretamente dois itens do núcleo do edital (script web/JavaScript e acessibilidade), e os dois ficam mais fortes um com o outro — a atualização dinâmica só é acessível porque a região tem `aria-live`.
+
+**Como foi validado**: os 35 testes anteriores + 3 novos (`test_routes.py`) cobrindo a rota `/api/analisar` (URL em branco retorna 400, resultado correto em JSON, histórico incluído na resposta) — total 38 testes, todos passando. Além disso, verificação de ponta a ponta num navegador real (Chrome via Playwright): subimos o servidor Flask de verdade, analisamos `google.com` de verdade (mesmas três fontes reais da Fase 1), e confirmamos que (a) a página não recarrega (uma variável JavaScript marcada antes do envio sobrevive depois do resultado aparecer), (b) o estado de carregamento (`aria-busy="true"`) aparece antes do resultado, e (c) o resultado e o histórico são atualizados corretamente na tela.
+
+**Capturas**: [`capturas/2026-10-11_fase2-fetch-sem-reload.png`](capturas/2026-10-11_fase2-fetch-sem-reload.png).
+
+### Migração do banco de dados para PostgreSQL via SQLAlchemy
+
+**Quando**: 11/10/2026.
+
+**Contexto**: era o problema estrutural que mais motivou essa fase (ver "Reavaliação da stack tecnológica" acima): o SQLite vivia num arquivo local, e o plano gratuito do Render não mantém disco persistente — o histórico de consultas sumia a cada novo deploy.
+
+**O que foi feito**: `termometro/db.py` foi reescrito usando SQLAlchemy ORM no lugar do `sqlite3` puro. Um modelo `Consulta` (mesma tabela `consultas`, mesmas colunas) substitui as queries SQL manuais. A engine é criada por uma função `init_db(database_url)`, chamada pelo `create_app()`, lendo a URL de uma variável de ambiente nova, `DATABASE_URL`:
+- **Se `DATABASE_URL` não estiver definida** (dev local, ou o Render antes do Postgres ser provisionado): cai automaticamente pro mesmo arquivo SQLite de sempre. Nada muda pra quem só quer rodar o projeto localmente.
+- **Se `DATABASE_URL` apontar pro Postgres**: usa Postgres de verdade, incluindo um ajuste pro formato antigo de URL (`postgres://`) que o Render ainda entrega e que o SQLAlchemy atual não aceita mais direto.
+- Dependências novas em `requirements.txt`: `SQLAlchemy` e `psycopg2-binary` (binário pra não depender de compilador C no ambiente de deploy).
+
+**Por que isso importa para o relatório**: resolve o problema estrutural citado desde a reavaliação de stack do início do PI2 — é o item que mais justifica tecnicamente essa fase.
+
+**Como foi validado**: os 38 testes automatizados (incluindo os de histórico) passam normalmente contra o novo `db.py`, já que por padrão eles caem no SQLite temporário. Rodado também um teste de fluxo completo fora do pytest (servidor real, requisição real). Como não há Postgres disponível neste ambiente de desenvolvimento pra testar de ponta a ponta, o SQL gerado pelo SQLAlchemy foi compilado especificamente contra o dialeto do Postgres (sem conectar em nada) pra conferir que o `CREATE TABLE` é válido — saiu `SERIAL`/`VARCHAR`/`TIMESTAMP` corretos.
+
+**Passo manual concluído**: o código por si só não trocava o banco em produção, só passava a suportar Postgres — faltava provisionar a instância gerenciada no Render e configurar `DATABASE_URL` lá, o que só quem tem acesso à conta pode fazer. Kemuel criou o banco Postgres no Render e configurou a variável de ambiente no serviço web em 11/10/2026, disparando o redeploy automático. Verificação formal em produção (confirmar que o histórico sobrevive a um novo deploy) ainda está prevista pro smoke test da Fase 4.
+
+---
+
+### Ajuste: correção de bug visual no histórico em telas de celular
+
+**Quando**: 26/09/2026 (Quinzena 4).
+
+**Contexto**: ao gerar telas do sistema como apoio visual para o Relatório Parcial, percebemos que, em telas de celular (≤480px), URLs longas no histórico de consultas quebravam no meio da palavra (por exemplo, "google.co" numa linha e "m" isolado na linha seguinte). O motivo era uma regra de CSS (`word-break: break-all`) herdada da versão para desktop, que corta o texto em qualquer ponto para caber na largura disponível, sem respeitar os limites da palavra.
+
+**O que foi feito**: na media query que trata telas pequenas (`static/style.css`), a regra `word-break: break-all` foi trocada por `overflow-wrap: anywhere`, que só quebra a URL quando necessário e sem cortar no meio de um trecho legível, além de `max-width: 100%` e alinhamento à esquerda para o texto não estourar a largura da tela.
+
+**Por que isso importa para o relatório**: é uma melhoria de usabilidade/acessibilidade mobile, encontrada e corrigida durante o próprio processo de revisão da interface — pode ser citada como parte do amadurecimento contínuo de UX entre o PI1 e o PI2, mesmo antes da Fase 2 formalmente começar.
+
+**Como foi validado**: testado visualmente em larguras de 320px, 360px e 390px (celulares mais comuns), sem estouro de layout e sem quebra no meio de palavra.
+
+**Capturas**: telas do protótipo em `capturas/prototipo-relatorio-parcial/` já refletem o CSS corrigido.
 
 ---
 
 ## Fase 3 — Diferenciais
 
-*Ainda não iniciada. Prevista para a Quinzena 5 (05/10–18/10/2026).*
+*Prevista e concluída na Quinzena 5 (05/10–18/10/2026), em 11/10/2026 — mesmo dia da Fase 2, pelo mesmo motivo (viagem do Kemuel entre 15 e 22/10).*
+
+### Score contínuo/ponderado e explicabilidade dos fatores
+
+**Quando**: 11/10/2026.
+
+**Contexto**: o motor de score (`termometro/scoring.py`) caía sempre num de 5 valores fixos (0, 10, 30, 60, 95), decididos por uma cadeia de `if/elif` sobre faixas de dias de vida do domínio. Dois domínios com 31 e 179 dias, por exemplo, recebiam exatamente o mesmo score (60) que um domínio com 1 dia a mais de diferença — e dois domínios com 1 e 29 dias também. Faltava granularidade, e o usuário não tinha como saber *por que* o score era aquele número.
+
+**O que foi feito**:
+1. **Score contínuo e ponderado**: Procon e Google Safe Browsing continuam como vetos definitivos (score 0 na hora — misturar um sinal de lista negra confirmada com sinais mais fracos deixaria o resultado perigosamente mais brando do que deveria). Fora esses dois casos, o score agora é uma combinação ponderada de dois fatores contínuos: idade do domínio via WHOIS (peso 70%, numa curva de saturação exponencial calibrada pra cruzar ~60 pontos perto dos 180 dias, o mesmo marco usado no modelo antigo) e validade da resolução de IP (peso 30% — um domínio que não resolve, ou resolve pra um endereço interno/privado, pesa contra o score). O resultado é uma nota de 0 a 100 em vez de 5 valores fixos.
+2. **Explicabilidade**: `calcular_resultado` passou a devolver também uma lista `fatores`, com a descrição, o peso e a contribuição em pontos de cada sinal que formou o score. Na interface, isso aparece como um `<details>` recolhível ("Como esse score foi calculado") dentro da caixa de resultado — funciona com ou sem JavaScript, e tanto na rota com reload quanto no fetch da Fase 2 (duplicado em `static/app.js`).
+
+**Por que isso importa para o relatório**: aborda diretamente os dois diferenciais do edital nessa frente — "score contínuo/ponderado" e "explicabilidade dos fatores do score" — e corrige uma limitação real do modelo anterior (perda de granularidade entre domínios de idades próximas).
+
+**Como foi validado**: suíte de testes de `scoring.py` reescrita (29 testes) cobrindo: prioridade de Procon sobre Google sobre os fatores ponderados; `fonte_principal` correto nos 5 casos possíveis (procon, google, domínio inválido, IP inválido, idade normal); score sempre entre 0 e 100; monotonicidade (domínio mais antigo nunca pontua pior que um mais novo, IP inválido nunca pontua melhor que IP válido pra mesma idade); cor da faixa batendo com o score; soma das contribuições dos fatores batendo com o score final. Verificado também num navegador real: análise de `google.com` (10618 dias) retornou 100/100 com a quebra "peso 70% · contribuiu 70 pts" (idade) + "peso 30% · contribuiu 30 pts" (IP) — 70+30=100, conferindo.
+
+**Capturas**: [`capturas/2026-10-11_fase3-explicabilidade-score.png`](capturas/2026-10-11_fase3-explicabilidade-score.png).
+
+### Dashboard de análise de dados
+
+**Quando**: 11/10/2026.
+
+**Contexto**: item opcional do edital que o grupo assumiu como meta desde o início (ver "Decisão de continuar o projeto"). O histórico de consultas já existia no banco; faltava uma visão agregada dele.
+
+**O que foi feito**: nova rota `/dashboard` (`termometro/routes.py`), com uma função de agregação `estatisticas_dashboard()` em `termometro/db.py` que lê todas as consultas registradas e calcula: distribuição de scores por faixa (seguro/atenção/perigo), os domínios mais consultados (ordenados por frequência) e a taxa de detecção por fonte — aproveitando a coluna nova `fonte_principal` (adicionada ao modelo `Consulta` nesta mesma sessão) que registra qual sinal decidiu o resultado de cada consulta (procon, google, domínio inválido, IP inválido ou idade do domínio). Renderizado em `templates/dashboard.html` com barras de progresso em CSS puro, sem nenhuma biblioteca de gráficos nova — consistente com a filosofia de frontend leve do projeto. Link pro dashboard adicionado no rodapé da página principal.
+
+**Por que isso importa para o relatório**: cobre o item opcional de análise de dados do edital, usando dado real já coletado pela própria aplicação (sem necessidade de fonte externa).
+
+**Como foi validado**: `tests/test_db.py` (4 testes) cobrindo a agregação isoladamente — distribuição vazia, distribuição por faixa, ordenação dos domínios mais consultados, contagem por fonte. Mais 2 testes de integração da rota `/dashboard` (estado vazio e com dados). Verificado também visualmente: populamos o banco com 10 consultas de cenários variados (incluindo Procon, Google e domínio inválido) e conferimos a olho que os números do dashboard batem exatamente com o esperado (4 seguro / 2 atenção / 4 perigo; 7 idade_dominio / 1 domínio_inválido / 1 google / 1 procon).
+
+**Capturas**: [`capturas/2026-10-11_fase3-dashboard.png`](capturas/2026-10-11_fase3-dashboard.png).
+
+**Nota sobre dado existente**: a coluna `fonte_principal` é nova; consultas já salvas antes dessa mudança (se existirem num banco já em produção) vão aparecer como "desconhecida" no dashboard, já que não têm esse dado retroativamente. Não é um problema agora porque a Fase 2 acabou de configurar o Postgres em produção hoje mesmo — o histórico em produção, se já existir, é recente.
 
 ---
 
