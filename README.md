@@ -39,14 +39,50 @@ A nova versão trouxe uma reformulação completa focada em padrões profissiona
 * **Interface Dark Mode Premium:** Transição visual completa para uma paleta monocromática baseada em tons de *Slate* com efeito *Glassmorphism* escuro, projetado para simular painéis de segurança corporativos e destacar as cores dos alertas.
 * **Microinterações e Focus State:** Feedbacks visuais em tempo real. Campos contam com uma "aura" de brilho responsiva ao clique (*focus*), e botões utilizam efeitos de elevação (*hover*).
 * **Responsividade Mobile Completa:** Refatoração através de Media Queries, garantindo adaptação nativa a smartphones.
-* **Transparência e Segurança no Mobile:** Implementação de quebras de linha (`word-break: break-all`) que forçam a renderização integral de links extensos no histórico, impedindo o mascaramento visual no celular.
+* **Transparência e Segurança no Mobile:** URLs extensas no histórico quebram de forma legível em telas pequenas (`overflow-wrap: anywhere`), sem cortar no meio da palavra, evitando mascaramento visual no celular.
 * **Branding e Compartilhamento Profissional:** Integração de Favicon dinâmico e metadados (Open Graph) para geração de cards informativos em redes sociais.
 * **Isolamento de Credenciais:** Uso de variáveis de ambiente seguras (`os.getenv`) para ocultar a chave privada de API do Google.
 
 ## 🛠️ Tecnologias Utilizadas
 * **Back-end:** Python, Flask, `gunicorn`, `requests`, `python-whois`, `socket`, `python-dotenv`.
-* **Banco de Dados:** SQLite3 (Histórico local de consultas recentes com exibição dinâmica).
-* **Front-end:** HTML5 semântico, CSS3 avançado (Flexbox, Glassmorphism, Responsividade), JavaScript nativo.
+* **Banco de Dados:** PostgreSQL em produção via SQLAlchemy ORM, com fallback automático para SQLite em desenvolvimento local.
+* **Front-end:** HTML5 semântico, CSS3 avançado (Flexbox, Glassmorphism, Responsividade), JavaScript nativo (fetch/AJAX, sem reload de página).
+* **Testes:** pytest (testes automatizados do motor de score, verificações de segurança e rotas).
+* **CI:** GitHub Actions rodando a suíte de testes a cada push.
+
+## 💻 Rodando o projeto localmente
+
+**Pré-requisitos:** Python 3.11 ou superior.
+
+```bash
+# Clone o repositório
+git clone https://github.com/KemuelSS/termometro-urls-univesp.git
+cd termometro-urls-univesp
+
+# Crie e ative um ambiente virtual
+python -m venv venv
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # Linux/Mac
+
+# Instale as dependências
+pip install -r requirements.txt
+
+# Configure as variáveis de ambiente
+cp .env.example .env
+# edite o .env e preencha GOOGLE_API_KEY (DATABASE_URL é opcional — sem ela, usa SQLite local)
+
+# Rode a aplicação
+python app.py
+```
+
+A aplicação sobe em `http://localhost:5000`.
+
+### Rodando os testes
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
 
 ## 👥 Autores e Papéis (Grupo PI - Univesp)
 

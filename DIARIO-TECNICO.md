@@ -190,4 +190,38 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 ## Fase 4 — Deploy e entrega
 
-*Ainda não iniciada. Prevista para as Quinzenas 6–7 (19/10–06/11/2026).*
+*Prevista para as Quinzenas 6–7 (19/10–06/11/2026). Retomada em 25/10/2026, quando Kemuel voltou da viagem. Nesse ponto, todos os itens obrigatórios do edital (framework web, banco de dados, script web/JavaScript, nuvem, uso de API, acessibilidade, controle de versão, testes) e o item opcional (análise de dados) já estavam concluídos desde a Fase 2/3 — esta fase é sobre reprodutibilidade de deploy, integração contínua e documentação, não sobre funcionalidade pendente.*
+
+### Integração contínua (GitHub Actions)
+
+**Quando**: 25/10/2026.
+
+**Contexto**: os testes automatizados da Fase 2 só rodavam manualmente (`pytest` local). O edital pede controle de versão com qualidade contínua — ter a suíte rodando automaticamente a cada push fecha essa lacuna e evita que uma mudança quebre algo sem ninguém perceber antes de chegar em produção.
+
+**O que foi feito**: workflow `.github/workflows/tests.yml`, rodando a cada push e pull request: instala `requirements-dev.txt` e executa `pytest` num runner Ubuntu com Python 3.12 (versão fixada só pro ambiente de CI, independente da versão usada no deploy real — ver item abaixo).
+
+**Como foi validado**: o YAML foi validado localmente (parse sem erros) e os mesmos passos do workflow (instalar `requirements-dev.txt` + `pytest`) foram reproduzidos manualmente, 61 testes passando. A validação definitiva (rodar de verdade no GitHub) acontece no primeiro push desta fase.
+
+### README com setup local
+
+**Quando**: 25/10/2026.
+
+**Contexto**: o README já documentava a arquitetura e as funcionalidades, mas não tinha nenhuma instrução de como rodar o projeto localmente — barreira pra qualquer avaliador ou novo colaborador que quisesse testar fora do deploy.
+
+**O que foi feito**: seção nova "Rodando o projeto localmente" (clone, venv, instalação de dependências, variáveis de ambiente, como rodar a aplicação e os testes) e um arquivo `.env.example` documentando as variáveis esperadas (`GOOGLE_API_KEY` obrigatória, `DATABASE_URL` opcional). Também corrigida uma informação desatualizada no README: a seção de melhorias ainda citava `word-break: break-all` como funcionalidade ("impede mascaramento no celular"), quando na real esse foi exatamente o bug corrigido em 26/09 — o texto agora reflete a correção (`overflow-wrap: anywhere`). Tecnologias atualizadas pra citar PostgreSQL/SQLAlchemy, fetch/AJAX e pytest/GitHub Actions, que não existiam na última vez que essa seção foi escrita.
+
+**Como foi validado**: os comandos documentados foram os mesmos efetivamente usados durante o desenvolvimento desta sessão (mesma sequência de setup).
+
+**Pendente nesta fase**: `runtime.txt` (reprodutibilidade da versão de Python no Render) e o smoke test final em produção — aguardando Kemuel confirmar a versão de Python configurada no Render antes de fixar `runtime.txt`, pra não arriscar quebrar o deploy já funcionando. `Procfile` já foi feito (ver commit desta mesma data).
+
+### Merge pra produção e correção de um bug real de deploy (driver do Postgres)
+
+**Quando**: 25/10/2026.
+
+**Contexto**: ao revisar o painel do Render pra achar a versão do Python, percebemos um problema mais sério: o deploy do Render usa a branch `main`, mas Fase 2 e Fase 3 inteiras estavam só na `v2-responsividade`, nunca mescladas de volta — ou seja, nada disso estava no ar, e a variável `DATABASE_URL` configurada em produção no dia 11/10 estava sem efeito nenhum, porque o código que rodava ainda usava `sqlite3` puro e nem sabia que essa variável existia.
+
+**O que foi feito**: aberto o PR #4 (`v2-responsividade` → `main`) no GitHub, mesclado por Kemuel. O Render disparou o redeploy automático — que falhou (`ModuleNotFoundError: No module named 'psycopg'`). A causa: o SQLAlchemy 2.1 resolve o driver padrão de uma URL `postgresql://` sem sufixo pro dialeto `psycopg` (versão 3), não mais `psycopg2` — e o `requirements.txt` só tinha `psycopg2-binary` instalado. Corrigido trocando a dependência pra `psycopg[binary]` (psycopg 3), que é o que o SQLAlchemy realmente tenta importar nessa versão.
+
+**Por que isso importa para o relatório**: é um lembrete real de que validar a geração de SQL contra um dialeto (feito na Fase 2) não é a mesma coisa que validar a resolução do driver/dependência — a brecha só apareceu com um deploy de verdade.
+
+**Como foi validado**: localmente, `create_engine` com uma URL Postgres fake agora resolve pro driver `psycopg` sem erro (antes, o mesmo teste reproduzia o `ModuleNotFoundError` do Render). Reinstalação limpa do `requirements.txt` num venv descartável, do zero, confirmando que a dependência certa é puxada. Os 61 testes automatizados continuam passando (não usam Postgres de verdade, então não seriam afetados por esse tipo de erro — ponto de atenção pra depois). Validação final em produção pendente do próximo deploy no Render.
