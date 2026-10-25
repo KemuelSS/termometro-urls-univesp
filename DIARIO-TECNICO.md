@@ -212,7 +212,7 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Como foi validado**: os comandos documentados foram os mesmos efetivamente usados durante o desenvolvimento desta sessão (mesma sequência de setup).
 
-**Pendente nesta fase**: `runtime.txt` (reprodutibilidade da versão de Python no Render) e o smoke test final em produção — aguardando Kemuel confirmar a versão de Python configurada no Render antes de fixar `runtime.txt`, pra não arriscar quebrar o deploy já funcionando. `Procfile` já foi feito (ver commit desta mesma data).
+**Pendente nesta fase**: só o `runtime.txt` (reprodutibilidade da versão de Python no Render) — aguardando Kemuel confirmar a versão de Python configurada no Render antes de fixar o arquivo, pra não arriscar quebrar o deploy já funcionando. `Procfile` já foi feito, e o smoke test em produção já foi validado (ver entrada abaixo).
 
 ### Merge pra produção e correção de um bug real de deploy (driver do Postgres)
 
@@ -224,4 +224,6 @@ Trilha técnica: Kemuel Sousa, com apoio do Claude (Anthropic). Dúvidas sobre q
 
 **Por que isso importa para o relatório**: é um lembrete real de que validar a geração de SQL contra um dialeto (feito na Fase 2) não é a mesma coisa que validar a resolução do driver/dependência — a brecha só apareceu com um deploy de verdade.
 
-**Como foi validado**: localmente, `create_engine` com uma URL Postgres fake agora resolve pro driver `psycopg` sem erro (antes, o mesmo teste reproduzia o `ModuleNotFoundError` do Render). Reinstalação limpa do `requirements.txt` num venv descartável, do zero, confirmando que a dependência certa é puxada. Os 61 testes automatizados continuam passando (não usam Postgres de verdade, então não seriam afetados por esse tipo de erro — ponto de atenção pra depois). Validação final em produção pendente do próximo deploy no Render.
+**Como foi validado**: localmente, `create_engine` com uma URL Postgres fake agora resolve pro driver `psycopg` sem erro (antes, o mesmo teste reproduzia o `ModuleNotFoundError` do Render). Reinstalação limpa do `requirements.txt` num venv descartável, do zero, confirmando que a dependência certa é puxada. Os 61 testes automatizados continuam passando (não usam Postgres de verdade, então não seriam afetados por esse tipo de erro — ponto de atenção pra depois).
+
+**Validado em produção** (25/10/2026, após o merge do PR #5): Render redeployou com sucesso. A home mostra o link novo "Ver dashboard de análise de dados" (confirma que o template atualizado está no ar) e a rota `/dashboard` carrega sem erro, mostrando "Total de consultas registradas: 0" — o zero é esperado (primeira vez que o Postgres de verdade está sendo usado, tabela recém-criada vazia), e o fato de não ter dado erro já confirma que a conexão com o banco gerenciado está funcionando. Smoke test considerado concluído pra essa frente.
